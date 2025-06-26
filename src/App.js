@@ -10,7 +10,7 @@ import Quiz from './pages/Quiz';
 import About from './pages/About';
 import { checkApiHealth } from './services/api';
 import { preferences } from './utils/helpers';
-import './styles/globals.css';
+import './styles/global.css';
 import './styles/components.css';
 import './App.css';
 

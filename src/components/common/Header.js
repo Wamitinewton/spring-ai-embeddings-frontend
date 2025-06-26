@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Code2, Zap, Wifi, WifiOff } from 'lucide-react';
+import { Menu, X, Code2, Wifi, WifiOff } from 'lucide-react'; // Removed unused Zap import
 import { NAVIGATION_ITEMS } from '../../utils/constants';
-import { urlUtils } from '../../utils/helpers';
 
 const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
