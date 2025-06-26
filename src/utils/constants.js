@@ -236,7 +236,6 @@ export const APP_INFO = {
     answer: /^[ABCD]$/i
   };
   
-  // Rate limiting configuration
   export const RATE_LIMITS = {
     chatbot: {
       requests: 30,
@@ -252,7 +251,6 @@ export const APP_INFO = {
     }
   };
   
-  // Feature flags
   export const FEATURES_FLAGS = {
     enableQuiz: true,
     enableRandomFacts: true,
@@ -262,10 +260,9 @@ export const APP_INFO = {
     enableVoiceInput: false
   };
   
-  // Social links and contact info
   export const SOCIAL_LINKS = {
-    github: 'https://github.com/yourusername/programming-assistant',
-    linkedin: 'https://linkedin.com/in/yourusername',
-    twitter: 'https://twitter.com/yourusername',
-    email: 'contact@programmingassistant.com'
+    github: 'https://github.com/Wamitinewton/spring-ai-embeddings.git',
+    linkedin: 'https://www.linkedin.com/in/newton-wamiti-044b1225b/',
+    twitter: 'https://x.com/wamiti_newton',
+    email: 'wamitinewton@gmail.com'
   };

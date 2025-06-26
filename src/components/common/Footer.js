@@ -95,7 +95,7 @@ const Footer = () => {
             <ul className="footer-links">
               <li>
                 <a 
-                  href="https://docs.spring.io/spring-ai/docs/current/reference/html/" 
+                  href="https://docs.spring.io/spring-ai/reference/index.html" 
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
