@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// Base API configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://kz017zc2-8080.inc1.devtunnels.ms/api';
 
-// Create axios instance with default configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds timeout
@@ -12,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging and error handling
 api.interceptors.request.use(
   (config) => {
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
@@ -24,7 +21,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for unified error handling
 api.interceptors.response.use(
   (response) => {
     console.log(`API Response: ${response.status} from ${response.config.url}`);
@@ -33,9 +29,7 @@ api.interceptors.response.use(
   (error) => {
     console.error('API Response Error:', error);
     
-    // Handle different types of errors
     if (error.response) {
-      // Server responded with error status
       const { status, data } = error.response;
       
       switch (status) {
@@ -51,22 +45,17 @@ api.interceptors.response.use(
           throw new Error(data.errorMessage || `Server error (${status}). Please try again.`);
       }
     } else if (error.request) {
-      // Network error
       throw new Error('Unable to connect to server. Please check your internet connection.');
     } else {
-      // Other error
       throw new Error('An unexpected error occurred. Please try again.');
     }
   }
 );
 
-// API endpoints
 export const endpoints = {
-  // Application info
   info: '/info',
   health: '/health',
   
-  // Chatbot endpoints
   chatbot: {
     ask: '/chatbot/ask',
     randomFact: '/chatbot/random-fact',
@@ -79,7 +68,6 @@ export const endpoints = {
     },
   },
   
-  // Quiz endpoints
   quiz: {
     start: '/quiz/start',
     answer: '/quiz/answer',
@@ -91,9 +79,7 @@ export const endpoints = {
   },
 };
 
-// Generic API methods
 export const apiMethods = {
-  // GET request
   get: async (url, params = {}) => {
     try {
       const response = await api.get(url, { params });
@@ -104,7 +90,6 @@ export const apiMethods = {
     }
   },
   
-  // POST request
   post: async (url, data = {}) => {
     try {
       const response = await api.post(url, data);
@@ -115,7 +100,6 @@ export const apiMethods = {
     }
   },
   
-  // PUT request
   put: async (url, data = {}) => {
     try {
       const response = await api.put(url, data);
@@ -126,7 +110,6 @@ export const apiMethods = {
     }
   },
   
-  // DELETE request
   delete: async (url) => {
     try {
       const response = await api.delete(url);
@@ -138,7 +121,6 @@ export const apiMethods = {
   },
 };
 
-// Helper function to handle API errors consistently
 export const handleApiError = (error, fallbackMessage = 'An error occurred') => {
   if (error.message) {
     return error.message;
@@ -146,7 +128,6 @@ export const handleApiError = (error, fallbackMessage = 'An error occurred') => 
   return fallbackMessage;
 };
 
-// Helper function to check if the API is available
 export const checkApiHealth = async () => {
   try {
     const response = await apiMethods.get(endpoints.health);

@@ -1,8 +1,5 @@
 import { apiMethods, endpoints } from './api';
 
-/**
- * Chatbot Service - Handles all chatbot-related API calls
- */
 export class ChatbotService {
   
   /**

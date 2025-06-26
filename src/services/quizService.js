@@ -1,8 +1,5 @@
 import { apiMethods, endpoints } from './api';
 
-/**
- * Quiz Service - Handles all quiz-related API calls
- */
 export class QuizService {
   
   /**
@@ -156,11 +153,6 @@ export class QuizService {
     }
   }
 
-  /**
-   * Extend quiz session timeout (keep alive)
-   * @param {string} sessionId - Quiz session ID
-   * @returns {Promise<Object>} Extension response
-   */
   static async extendSession(sessionId) {
     try {
       if (!sessionId || typeof sessionId !== 'string') {
@@ -255,7 +247,6 @@ export class QuizService {
     
     const supportedDifficulties = ['beginner', 'intermediate', 'advanced'];
 
-    // Validate language
     const normalizedLanguage = language ? language.toLowerCase().trim() : 'python';
     if (!supportedLanguages.includes(normalizedLanguage)) {
       return {
@@ -264,7 +255,6 @@ export class QuizService {
       };
     }
 
-    // Validate difficulty
     const normalizedDifficulty = difficulty ? difficulty.toLowerCase().trim() : 'beginner';
     if (!supportedDifficulties.includes(normalizedDifficulty)) {
       return {

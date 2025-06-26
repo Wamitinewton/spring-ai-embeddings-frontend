@@ -1,8 +1,5 @@
 import { apiMethods, endpoints } from './api';
 
-/**
- * Facts Service - Handles random programming facts API calls
- */
 export class FactsService {
   
   /**

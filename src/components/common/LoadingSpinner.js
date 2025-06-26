@@ -165,7 +165,6 @@ export const LoadingDots = ({ size = 'medium', color = 'primary' }) => {
   );
 };
 
-// Skeleton loading component for content placeholders
 export const SkeletonLoader = ({ lines = 3, width = '100%', height = '1rem' }) => {
   return (
     <div className="skeleton-container">

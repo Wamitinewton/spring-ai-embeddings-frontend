@@ -1,10 +1,6 @@
 import { PROGRAMMING_LANGUAGES, VALIDATION_PATTERNS, STORAGE_KEYS } from './constants';
 
-/**
- * Format time duration in a human-readable format
- * @param {number} milliseconds - Duration in milliseconds
- * @returns {string} Formatted duration
- */
+
 export const formatDuration = (milliseconds) => {
   if (milliseconds < 1000) {
     return `${milliseconds}ms`;
@@ -20,11 +16,7 @@ export const formatDuration = (milliseconds) => {
   return `${minutes}m ${remainingSeconds}s`;
 };
 
-/**
- * Format response time for display
- * @param {number} responseTimeMs - Response time in milliseconds
- * @returns {string} Formatted response time
- */
+
 export const formatResponseTime = (responseTimeMs) => {
   if (responseTimeMs < 1000) {
     return `${responseTimeMs}ms`;
@@ -32,11 +24,7 @@ export const formatResponseTime = (responseTimeMs) => {
   return `${(responseTimeMs / 1000).toFixed(1)}s`;
 };
 
-/**
- * Get language display information
- * @param {string} languageCode - Language code
- * @returns {Object} Language display info
- */
+
 export const getLanguageInfo = (languageCode) => {
   const language = PROGRAMMING_LANGUAGES.find(
     lang => lang.code.toLowerCase() === languageCode?.toLowerCase()
@@ -44,30 +32,20 @@ export const getLanguageInfo = (languageCode) => {
   return language || { code: 'unknown', name: 'Unknown', icon: '❓' };
 };
 
-/**
- * Truncate text with ellipsis
- * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length
- * @returns {string} Truncated text
- */
+
 export const truncateText = (text, maxLength = 100) => {
   if (!text || typeof text !== 'string') return '';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 };
 
-/**
- * Copy text to clipboard
- * @param {string} text - Text to copy
- * @returns {Promise<boolean>} Success status
- */
+
 export const copyToClipboard = async (text) => {
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
       return true;
     } else {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
@@ -87,12 +65,7 @@ export const copyToClipboard = async (text) => {
   }
 };
 
-/**
- * Debounce function to limit API calls
- * @param {Function} func - Function to debounce
- * @param {number} delay - Delay in milliseconds
- * @returns {Function} Debounced function
- */
+
 export const debounce = (func, delay) => {
   let timeoutId;
   return (...args) => {

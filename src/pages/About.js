@@ -85,7 +85,6 @@ const About = () => {
           </p>
         </div>
 
-        {/* Mission Section */}
         <section className="about-section">
           <div className="about-content">
             <h2 className="about-title">
@@ -179,7 +178,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* Open Source */}
         <section className="opensource-section">
           <div className="opensource-content">
             <h2 className="opensource-title">
@@ -205,7 +203,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* Contact */}
         <section className="contact-section">
           <h2 className="section-title">Get In Touch</h2>
           <p className="section-description">

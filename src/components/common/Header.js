@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Code2, Wifi, WifiOff } from 'lucide-react'; // Removed unused Zap import
+import { Menu, X, Code2, Wifi, WifiOff } from 'lucide-react';
 import { NAVIGATION_ITEMS } from '../../utils/constants';
 
 const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
@@ -8,7 +8,6 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -18,12 +17,10 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
 
-  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isMobileMenuOpen && !event.target.closest('.nav')) {
@@ -52,18 +49,18 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         <div className="nav-container">
           {/* Brand Logo */}
           <Link to="/" className="nav-brand">
-            <Code2 size={24} />
+            <Code2 size={20} />
             <span className="brand-text">Programming Assistant</span>
             {!apiHealthy && (
               <span className="status-indicator status-offline">
-                <WifiOff size={12} />
-                Offline
+                <WifiOff size={10} />
+                <span className="hidden-mobile">Offline</span>
               </span>
             )}
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="nav-links">
+          <nav className="nav-links desktop-nav">
             {NAVIGATION_ITEMS.map((item) => (
               <Link
                 key={item.path}
@@ -89,7 +86,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
             aria-label="Toggle mobile menu"
             aria-expanded={isMobileMenuOpen}
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
@@ -137,18 +134,20 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: var(--spacing-md) 0;
+          padding: var(--spacing-sm) 0; /* Reduced padding on mobile */
+          min-height: 60px; /* Fixed height for consistency */
         }
 
         .nav-brand {
           display: flex;
           align-items: center;
-          gap: var(--spacing-sm);
-          font-size: 1.25rem;
+          gap: var(--spacing-xs); /* Smaller gap on mobile */
+          font-size: var(--font-size-base); /* Smaller on mobile */
           font-weight: 700;
           color: var(--text-primary);
           text-decoration: none;
           transition: color var(--transition-fast);
+          min-height: 44px; /* Touch target */
         }
 
         .nav-brand:hover {
@@ -160,15 +159,14 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+          font-size: var(--font-size-sm); /* Smaller on mobile */
         }
 
-        .nav-links {
-          display: flex;
+        /* Desktop Navigation */
+        .desktop-nav {
+          display: none; /* Hidden on mobile */
           align-items: center;
           gap: var(--spacing-lg);
-          list-style: none;
-          margin: 0;
-          padding: 0;
         }
 
         .nav-link {
@@ -178,10 +176,12 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           color: var(--text-secondary);
           text-decoration: none;
           font-weight: 500;
-          padding: var(--spacing-sm) var(--spacing-md);
+          padding: var(--spacing-xs) var(--spacing-sm);
           border-radius: var(--radius-md);
           transition: all var(--transition-fast);
           position: relative;
+          min-height: 44px; /* Touch target */
+          font-size: var(--font-size-sm);
         }
 
         .nav-link:hover {
@@ -197,7 +197,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         .nav-link.active::after {
           content: '';
           position: absolute;
-          bottom: -12px;
+          bottom: -8px;
           left: 50%;
           transform: translateX(-50%);
           width: 20px;
@@ -207,32 +207,81 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         }
 
         .nav-icon {
-          font-size: 1.1rem;
+          font-size: 1rem;
         }
 
+        .nav-text {
+          font-size: var(--font-size-sm);
+        }
+
+        /* Mobile Menu Toggle */
         .mobile-nav-toggle {
-          display: none;
+          display: flex; /* Visible on mobile */
+          align-items: center;
+          justify-content: center;
           background: transparent;
-          border: none;
+          border: 1px solid var(--border-secondary);
           color: var(--text-primary);
           cursor: pointer;
           padding: var(--spacing-xs);
           border-radius: var(--radius-sm);
           transition: all var(--transition-fast);
+          min-height: 44px;
+          min-width: 44px;
         }
 
         .mobile-nav-toggle:hover {
           background: rgba(102, 126, 234, 0.1);
+          border-color: var(--border-accent);
         }
 
+        /* Mobile Navigation */
         .mobile-nav {
           display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: var(--bg-secondary);
+          flex-direction: column;
+          padding: var(--spacing-md);
+          border-top: 1px solid var(--border-secondary);
+          gap: var(--spacing-xs);
+          box-shadow: var(--shadow-lg);
+          max-height: calc(100vh - 80px);
+          overflow-y: auto;
+        }
+
+        .mobile-nav.open {
+          display: flex;
+        }
+
+        .mobile-nav .nav-link {
+          width: 100%;
+          justify-content: flex-start;
+          padding: var(--spacing-md);
+          border-radius: var(--radius-md);
+          font-size: var(--font-size-base);
+          min-height: 48px;
+        }
+
+        .mobile-nav .nav-link.active::after {
+          display: none;
+        }
+
+        .mobile-nav .nav-link.active {
+          background: var(--accent-gradient);
+          color: var(--text-primary);
+        }
+
+        .mobile-nav .nav-icon {
+          font-size: 1.1rem;
         }
 
         .mobile-status {
           padding-top: var(--spacing-md);
           border-top: 1px solid var(--border-secondary);
-          margin-top: var(--spacing-md);
+          margin-top: var(--spacing-sm);
         }
 
         .status-indicator {
@@ -241,7 +290,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           gap: var(--spacing-xs);
           padding: var(--spacing-xs) var(--spacing-sm);
           border-radius: var(--radius-sm);
-          font-size: 0.75rem;
+          font-size: var(--font-size-xs);
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -258,78 +307,129 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           background: rgba(245, 101, 101, 0.2);
           color: #fc8181;
           border: 1px solid rgba(245, 101, 101, 0.3);
-          margin-left: var(--spacing-sm);
         }
 
         .status-dot {
-          width: 6px;
-          height: 6px;
+          width: 4px;
+          height: 4px;
           border-radius: 50%;
           background: currentColor;
           animation: pulse 2s infinite;
         }
 
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-          .nav-links:not(.mobile-nav) {
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        /* Tablet and Desktop Styles */
+        @media (min-width: 768px) {
+          .nav-container {
+            padding: var(--spacing-md) 0;
+          }
+
+          .nav-brand {
+            gap: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+          }
+
+          .brand-text {
+            font-size: var(--font-size-base);
+          }
+
+          .desktop-nav {
+            display: flex; /* Show on tablet+ */
+          }
+
+          .mobile-nav-toggle {
+            display: none; /* Hide on tablet+ */
+          }
+
+          .mobile-nav {
+            display: none !important; /* Hide mobile nav on tablet+ */
+          }
+
+          .nav-link {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: var(--font-size-base);
+          }
+
+          .nav-text {
+            font-size: var(--font-size-base);
+          }
+
+          .status-indicator {
+            font-size: var(--font-size-xs);
+          }
+
+          .status-dot {
+            width: 6px;
+            height: 6px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .nav-brand {
+            font-size: var(--font-size-xl);
+          }
+
+          .brand-text {
+            font-size: var(--font-size-lg);
+          }
+
+          .desktop-nav {
+            gap: var(--spacing-xl);
+          }
+
+          .nav-link {
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-size: var(--font-size-base);
+          }
+
+          .nav-icon {
+            font-size: 1.1rem;
+          }
+        }
+
+        /* Hide text on very small screens */
+        @media (max-width: 480px) {
+          .brand-text {
+            display: none;
+          }
+
+          .nav-brand {
+            gap: var(--spacing-xs);
+          }
+
+          .status-offline span:not(.hidden-mobile) {
             display: none;
           }
 
           .mobile-nav-toggle {
-            display: block;
+            min-height: 40px;
+            min-width: 40px;
           }
 
-          .mobile-nav {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--bg-secondary);
-            flex-direction: column;
-            padding: var(--spacing-md);
-            border-top: 1px solid var(--border-secondary);
-            gap: var(--spacing-sm);
-            box-shadow: var(--shadow-lg);
-          }
-
-          .mobile-nav.open {
-            display: flex;
-          }
-
-          .mobile-nav .nav-link {
-            width: 100%;
-            justify-content: flex-start;
-            padding: var(--spacing-md);
-            border-radius: var(--radius-md);
-          }
-
-          .mobile-nav .nav-link.active::after {
-            display: none;
-          }
-
-          .mobile-nav .nav-link.active {
-            background: var(--accent-gradient);
-          }
-
-          .brand-text {
-            display: none;
+          .nav-container {
+            padding: var(--spacing-xs) 0;
+            min-height: 56px;
           }
         }
 
-        @media (max-width: 480px) {
+        /* Landscape mobile optimization */
+        @media (max-width: 768px) and (orientation: landscape) {
           .nav-container {
-            padding: var(--spacing-sm) 0;
+            padding: var(--spacing-xs) 0;
+            min-height: 50px;
           }
 
-          .nav-brand {
-            font-size: 1.1rem;
+          .mobile-nav {
+            max-height: calc(100vh - 60px);
           }
 
-          .status-offline {
-            margin-left: var(--spacing-xs);
-            padding: 2px var(--spacing-xs);
-            font-size: 0.65rem;
+          .mobile-nav .nav-link {
+            min-height: 44px;
+            padding: var(--spacing-sm) var(--spacing-md);
           }
         }
       `}</style>

@@ -67,7 +67,7 @@ function App() {
       setApiHealthy(isHealthy);
       
       if (!isHealthy) {
-        setError('Still unable to connect to the server. Please check if the backend is running on port 8080.');
+        setError('Unable to connect to internet.');
       }
     } catch (err) {
       setError('Connection retry failed. Please check your network connection.');

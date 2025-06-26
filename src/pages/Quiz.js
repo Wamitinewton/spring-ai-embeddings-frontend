@@ -30,7 +30,6 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
   const [sessionSummary, setSessionSummary] = useState(null);
 
   useEffect(() => {
-    // Could load quiz stats or info here if needed
   }, []);
 
   const startQuiz = async () => {
@@ -71,7 +70,6 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
       if (response.success) {
         const data = response.data;
         
-        // Set answer feedback
         setAnswerFeedback({
           correct: data.correct,
           message: data.message,
@@ -80,16 +78,13 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           selectedAnswer: selectedAnswer
         });
 
-        // Update session data with new score
         setSessionData(prev => ({
           ...prev,
           score: data.currentScore
         }));
 
-        // Move to feedback state
         setGameState('feedback');
 
-        // Store next question or summary for later use
         if (data.hasNextQuestion) {
           setCurrentQuestion(data.nextQuestion);
         } else {
@@ -107,10 +102,8 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
 
   const proceedToNext = () => {
     if (answerFeedback && sessionSummary) {
-      // Quiz completed
       setGameState('completed');
     } else {
-      // Move to next question
       setSelectedAnswer('');
       setAnswerFeedback(null);
       setGameState('playing');

@@ -17,17 +17,14 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Scroll to bottom when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Add welcome message on first load
   useEffect(() => {
     setMessages([
       {
