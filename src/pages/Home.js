@@ -9,19 +9,25 @@ import {
   Users,
   Clock,
   CheckCircle,
-  TrendingUp
+  TrendingUp,
+  Lightbulb,
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { FEATURES, PROGRAMMING_LANGUAGES } from '../utils/constants';
 import { formatNumber } from '../utils/helpers';
 import { apiMethods, endpoints } from '../services/api';
+import { ChatbotService } from '../services/chatbotService';
 
 const Home = ({ userPreferences, apiHealthy }) => {
   const [appInfo, setAppInfo] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [randomFact, setRandomFact] = useState(null);
+  const [loadingFact, setLoadingFact] = useState(false);
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -45,6 +51,9 @@ const Home = ({ userPreferences, apiHealthy }) => {
             languagesSupported: PROGRAMMING_LANGUAGES.length,
             successRate: 94
           });
+
+          // Load random fact on page load
+          loadRandomFact();
         }
       } catch (err) {
         setError('Failed to load application information');
@@ -56,6 +65,22 @@ const Home = ({ userPreferences, apiHealthy }) => {
 
     loadHomeData();
   }, [apiHealthy]);
+
+  const loadRandomFact = async () => {
+    if (!apiHealthy) return;
+    
+    setLoadingFact(true);
+    try {
+      const response = await ChatbotService.getRandomFact(userPreferences.language);
+      if (response.success) {
+        setRandomFact(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to load random fact:', err);
+    } finally {
+      setLoadingFact(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -106,6 +131,51 @@ const Home = ({ userPreferences, apiHealthy }) => {
             )}
           </div>
         </section>
+
+        {/* Random Fact Section */}
+        {apiHealthy && (
+          <section className="fact-section animate-fade-in-up">
+            <div className="fact-container">
+              <div className="fact-header">
+                <div className="fact-title">
+                  <Lightbulb size={24} />
+                  <h3>Programming Fact of the Day</h3>
+                </div>
+                <button
+                  onClick={loadRandomFact}
+                  disabled={loadingFact}
+                  className="btn btn-secondary btn-sm refresh-btn"
+                  title="Get new fact"
+                >
+                  <RefreshCw size={16} className={loadingFact ? 'spinning' : ''} />
+                </button>
+              </div>
+              
+              {randomFact && !loadingFact ? (
+                <div className="fact-content">
+                  <div className="fact-text">{randomFact.fact}</div>
+                  <div className="fact-meta">
+                    <span className="fact-language">
+                      {PROGRAMMING_LANGUAGES.find(l => l.code === randomFact.language)?.icon}
+                      {PROGRAMMING_LANGUAGES.find(l => l.code === randomFact.language)?.name || randomFact.language}
+                    </span>
+                    <span className="fact-category">{randomFact.category}</span>
+                  </div>
+                </div>
+              ) : loadingFact ? (
+                <div className="fact-loading">
+                  <LoadingSpinner size="small" />
+                  <span>Loading fascinating fact...</span>
+                </div>
+              ) : (
+                <div className="fact-placeholder">
+                  <Sparkles size={32} />
+                  <span>Click refresh to discover amazing programming facts!</span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Stats Section */}
         {stats && (
@@ -269,6 +339,278 @@ const Home = ({ userPreferences, apiHealthy }) => {
       </div>
 
       <style jsx>{`
+        /* Fact Section Styling */
+        .fact-section {
+          margin-bottom: var(--spacing-2xl);
+        }
+
+        .fact-container {
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+          border: 1px solid rgba(102, 126, 234, 0.2);
+          border-radius: var(--radius-xl);
+          padding: var(--spacing-xl);
+          backdrop-filter: blur(10px);
+          transition: all var(--transition-normal);
+        }
+
+        .fact-container:hover {
+          border-color: rgba(102, 126, 234, 0.3);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .fact-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: var(--spacing-lg);
+        }
+
+        .fact-title {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+          color: var(--text-primary);
+        }
+
+        .fact-title h3 {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 600;
+        }
+
+        .refresh-btn {
+          padding: var(--spacing-xs) var(--spacing-sm);
+          min-height: auto;
+        }
+
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+
+        .fact-content {
+          text-align: center;
+        }
+
+        .fact-text {
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: var(--text-secondary);
+          margin-bottom: var(--spacing-lg);
+          font-style: italic;
+        }
+
+        .fact-meta {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-md);
+          flex-wrap: wrap;
+        }
+
+        .fact-language,
+        .fact-category {
+          background: var(--bg-tertiary);
+          color: var(--text-accent);
+          padding: var(--spacing-xs) var(--spacing-sm);
+          border-radius: var(--radius-sm);
+          font-size: 0.875rem;
+          font-weight: 500;
+          border: 1px solid var(--border-secondary);
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-xs);
+        }
+
+        .fact-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--spacing-sm);
+          padding: var(--spacing-lg);
+          color: var(--text-secondary);
+        }
+
+        .fact-placeholder {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--spacing-sm);
+          padding: var(--spacing-lg);
+          color: var(--text-muted);
+        }
+
+        /* Enhanced Mobile Responsiveness */
+        @media (max-width: 768px) {
+          .hero-title {
+            font-size: 2rem;
+            line-height: 1.2;
+          }
+
+          .hero-subtitle {
+            font-size: 1rem;
+            margin-bottom: var(--spacing-lg);
+          }
+
+          .hero-actions {
+            flex-direction: column;
+            width: 100%;
+            gap: var(--spacing-sm);
+          }
+
+          .hero-actions .btn {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .section-title {
+            font-size: 1.75rem;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            text-align: center;
+          }
+
+          .section-description {
+            font-size: 1rem;
+          }
+
+          .fact-header {
+            flex-direction: column;
+            gap: var(--spacing-md);
+            text-align: center;
+          }
+
+          .fact-title {
+            justify-content: center;
+          }
+
+          .fact-meta {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+          }
+
+          .languages-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+          }
+
+          .language-card {
+            padding: var(--spacing-md);
+          }
+
+          .language-icon {
+            font-size: 1.5rem;
+          }
+
+          .language-name {
+            font-size: 0.8rem;
+          }
+
+          .steps-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-lg);
+          }
+
+          .step-card {
+            padding: var(--spacing-lg);
+            text-align: center;
+          }
+
+          .step-number {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 1rem;
+            margin: 0 auto var(--spacing-md);
+          }
+
+          .step-content h3 {
+            margin-bottom: var(--spacing-sm);
+          }
+
+          .step-icon {
+            margin: var(--spacing-md) auto 0;
+          }
+
+          .cta-section {
+            padding: var(--spacing-xl) var(--spacing-md);
+            margin: var(--spacing-xl) 0;
+          }
+
+          .cta-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: var(--spacing-md);
+          }
+
+          .cta-content p {
+            font-size: 1rem;
+            margin-bottom: var(--spacing-lg);
+          }
+
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+          }
+
+          .stat-card {
+            padding: var(--spacing-md);
+          }
+
+          .stat-number {
+            font-size: 2rem;
+          }
+
+          .fact-container {
+            padding: var(--spacing-lg);
+          }
+
+          .fact-text {
+            font-size: 1rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero {
+            padding: var(--spacing-xl) var(--spacing-sm);
+          }
+
+          .hero-title {
+            font-size: 1.75rem;
+          }
+
+          .hero-subtitle {
+            font-size: 0.95rem;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-sm);
+          }
+
+          .languages-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .step-card {
+            padding: var(--spacing-md);
+          }
+
+          .section-title {
+            font-size: 1.5rem;
+          }
+
+          .fact-container {
+            padding: var(--spacing-md);
+          }
+
+          .fact-title h3 {
+            font-size: 1.1rem;
+          }
+
+          .fact-text {
+            font-size: 0.95rem;
+          }
+        }
+
+        /* Existing styles from original component */
         .hero {
           text-align: center;
           padding: var(--spacing-2xl) 0;
@@ -489,93 +831,9 @@ const Home = ({ userPreferences, apiHealthy }) => {
           }
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-          .hero {
-            padding: var(--spacing-xl) var(--spacing-md);
-          }
-
-          .hero-title {
-            font-size: 2.5rem;
-          }
-
-          .hero-subtitle {
-            font-size: 1.1rem;
-          }
-
-          .hero-actions {
-            flex-direction: column;
-            align-items: center;
-          }
-
-          .section-title {
-            font-size: 2rem;
-            flex-direction: column;
-            gap: var(--spacing-sm);
-          }
-
-          .languages-grid {
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: var(--spacing-sm);
-          }
-
-          .language-card {
-            padding: var(--spacing-md);
-          }
-
-          .language-icon {
-            font-size: 1.5rem;
-          }
-
-          .language-name {
-            font-size: 0.8rem;
-          }
-
-          .steps-grid {
-            grid-template-columns: 1fr;
-            gap: var(--spacing-lg);
-          }
-
-          .step-card {
-            padding: var(--spacing-lg);
-          }
-
-          .step-number {
-            width: 2.5rem;
-            height: 2.5rem;
-            font-size: 1rem;
-          }
-
-          .cta-section {
-            padding: var(--spacing-xl) var(--spacing-md);
-          }
-
-          .cta-content h2 {
-            font-size: 1.75rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .step-card {
-            flex-direction: column;
-            text-align: center;
-            gap: var(--spacing-md);
-          }
-
-          .step-content {
-            order: 2;
-          }
-
-          .step-icon {
-            order: 3;
-          }
-
-          .step-number {
-            order: 1;
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
           }
         }
       `}</style>
