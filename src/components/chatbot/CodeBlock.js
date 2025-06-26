@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Code, Download } from 'lucide-react';
+import { Copy, Check, Code, Download, Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import { copyToClipboard, getLanguageInfo } from '../../utils/helpers';
 import { CODE_LANGUAGES } from '../../utils/constants';
 
@@ -10,13 +10,18 @@ const CodeBlock = ({
   description = null,
   showLineNumbers = true,
   maxHeight = '400px',
-  allowDownload = false
+  allowDownload = false,
+  className = ''
 }) => {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showNumbers, setShowNumbers] = useState(showLineNumbers);
 
   const languageInfo = getLanguageInfo(language);
   const displayLanguage = CODE_LANGUAGES[language.toLowerCase()] || language;
+  const codeLines = code.split('\n');
+  const shouldShowExpandButton = codeLines.length > 15;
 
   const handleCopy = async () => {
     const success = await copyToClipboard(code);
@@ -54,15 +59,16 @@ const CodeBlock = ({
       xml: 'xml',
       yaml: 'yml',
       sql: 'sql',
-      bash: 'sh'
+      bash: 'sh',
+      shell: 'sh'
     };
-    return extensions[lang] || 'txt';
+    return extensions[lang.toLowerCase()] || 'txt';
   };
 
   const formatCode = (code) => {
-    if (!showLineNumbers) return code;
+    if (!showNumbers) return code;
     
-    return code.split('\n').map((line, index) => (
+    return codeLines.map((line, index) => (
       <div key={index} className="code-line">
         <span className="line-number">{index + 1}</span>
         <span className="line-content">{line || ' '}</span>
@@ -70,16 +76,36 @@ const CodeBlock = ({
     ));
   };
 
-  const shouldShowExpandButton = code.split('\n').length > 15;
+  const getLanguageIcon = (lang) => {
+    const icons = {
+      javascript: '🟨',
+      typescript: '🔷',
+      python: '🐍',
+      java: '☕',
+      kotlin: '🎯',
+      csharp: '🔵',
+      cpp: '⚡',
+      rust: '🦀',
+      go: '🐹',
+      swift: '🦉',
+      json: '📄',
+      xml: '📋',
+      yaml: '📝',
+      sql: '🗃️',
+      bash: '💻',
+      shell: '💻'
+    };
+    return icons[lang.toLowerCase()] || '📄';
+  };
 
   return (
-    <div className="code-block-container">
+    <div className={`code-block-container ${fullscreen ? 'fullscreen' : ''} ${className}`}>
       {(description || filename) && (
         <div className="code-description">
           {filename && (
             <div className="code-filename">
               <Code size={16} />
-              {filename}
+              <span>{filename}</span>
             </div>
           )}
           {description && (
@@ -92,14 +118,34 @@ const CodeBlock = ({
         <div className="code-header">
           <div className="code-info">
             <span className="code-language">
-              {languageInfo.icon} {languageInfo.name}
+              <span className="language-icon">{getLanguageIcon(language)}</span>
+              <span className="language-name">{languageInfo.name}</span>
             </span>
-            <span className="code-lines">
-              {code.split('\n').length} lines
-            </span>
+            <div className="code-stats">
+              <span className="code-lines">{codeLines.length} lines</span>
+              <span className="code-chars">{code.length} chars</span>
+            </div>
           </div>
           
           <div className="code-actions">
+            <button
+              className="code-action-btn"
+              onClick={() => setShowNumbers(!showNumbers)}
+              title={showNumbers ? 'Hide line numbers' : 'Show line numbers'}
+            >
+              {showNumbers ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+            
+            {shouldShowExpandButton && (
+              <button
+                className="code-action-btn"
+                onClick={() => setFullscreen(!fullscreen)}
+                title={fullscreen ? 'Exit fullscreen' : 'View fullscreen'}
+              >
+                {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
+            )}
+            
             {allowDownload && (
               <button
                 className="code-action-btn"
@@ -109,37 +155,38 @@ const CodeBlock = ({
                 <Download size={14} />
               </button>
             )}
+            
             <button
-              className="code-action-btn"
+              className={`code-action-btn ${copied ? 'copied' : ''}`}
               onClick={handleCopy}
               title={copied ? 'Copied!' : 'Copy code'}
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? 'Copied' : 'Copy'}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
         </div>
         
         <div 
-          className={`code-content ${!expanded && shouldShowExpandButton ? 'collapsed' : ''}`}
+          className={`code-content ${!expanded && shouldShowExpandButton && !fullscreen ? 'collapsed' : ''}`}
           style={{
-            maxHeight: !expanded && shouldShowExpandButton ? '300px' : maxHeight
+            maxHeight: fullscreen ? '80vh' : (!expanded && shouldShowExpandButton ? '300px' : maxHeight)
           }}
         >
           <pre className="code-pre">
             <code className={`language-${displayLanguage}`}>
-              {showLineNumbers ? formatCode(code) : code}
+              {showNumbers ? formatCode(code) : code}
             </code>
           </pre>
         </div>
         
-        {shouldShowExpandButton && (
+        {shouldShowExpandButton && !fullscreen && (
           <div className="code-expand">
             <button
               className="expand-button"
               onClick={() => setExpanded(!expanded)}
             >
-              {expanded ? 'Show Less' : 'Show More'}
+              {expanded ? 'Show Less' : `Show More (+${codeLines.length - 15} lines)`}
             </button>
           </div>
         )}
@@ -152,6 +199,38 @@ const CodeBlock = ({
           overflow: hidden;
           background: var(--code-bg);
           border: 1px solid var(--code-border);
+          box-shadow: var(--shadow-sm);
+          transition: all var(--transition-normal);
+        }
+
+        .code-block-container:hover {
+          box-shadow: var(--shadow-md);
+          border-color: var(--border-accent);
+        }
+
+        .code-block-container.fullscreen {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 1000;
+          margin: 0;
+          border-radius: 0;
+          background: var(--bg-primary);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .fullscreen .code-block {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .fullscreen .code-content {
+          flex: 1;
+          overflow-y: auto;
         }
 
         .code-description {
@@ -190,19 +269,38 @@ const CodeBlock = ({
         .code-info {
           display: flex;
           align-items: center;
-          gap: var(--spacing-md);
+          gap: var(--spacing-lg);
         }
 
         .code-language {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-xs);
           font-family: var(--font-mono);
-          font-size: 0.75rem;
+          font-size: 0.875rem;
           font-weight: 500;
           color: var(--text-accent);
         }
 
-        .code-lines {
+        .language-icon {
+          font-size: 1rem;
+        }
+
+        .language-name {
+          font-weight: 600;
+        }
+
+        .code-stats {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-md);
           font-size: 0.75rem;
           color: var(--text-muted);
+        }
+
+        .code-lines,
+        .code-chars {
+          white-space: nowrap;
         }
 
         .code-actions {
@@ -224,17 +322,26 @@ const CodeBlock = ({
           font-weight: 500;
           cursor: pointer;
           transition: all var(--transition-fast);
+          white-space: nowrap;
         }
 
         .code-action-btn:hover {
           background: var(--bg-tertiary);
           color: var(--text-primary);
           border-color: var(--border-accent);
+          transform: translateY(-1px);
+        }
+
+        .code-action-btn.copied {
+          background: rgba(72, 187, 120, 0.2);
+          color: #9ae6b4;
+          border-color: rgba(72, 187, 120, 0.3);
         }
 
         .code-content {
           overflow: hidden;
           transition: max-height var(--transition-normal);
+          position: relative;
         }
 
         .code-content.collapsed {
@@ -263,9 +370,15 @@ const CodeBlock = ({
           background: transparent;
         }
 
+        .fullscreen .code-pre {
+          font-size: 0.95rem;
+          padding: var(--spacing-lg);
+        }
+
         .code-line {
           display: flex;
           min-height: 1.5rem;
+          align-items: center;
         }
 
         .line-number {
@@ -278,6 +391,7 @@ const CodeBlock = ({
           flex-shrink: 0;
           border-right: 1px solid var(--border-secondary);
           padding-right: var(--spacing-sm);
+          font-size: 0.8rem;
         }
 
         .line-content {
@@ -319,7 +433,26 @@ const CodeBlock = ({
           color: var(--code-text);
         }
 
-        /* Responsive design */
+        /* Enhanced scrollbar for code content */
+        .code-content::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        .code-content::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.1);
+        }
+
+        .code-content::-webkit-scrollbar-thumb {
+          background: var(--border-secondary);
+          border-radius: 4px;
+        }
+
+        .code-content::-webkit-scrollbar-thumb:hover {
+          background: var(--text-muted);
+        }
+
+        /* Mobile responsive design */
         @media (max-width: 768px) {
           .code-header {
             flex-direction: column;
@@ -327,8 +460,14 @@ const CodeBlock = ({
             align-items: flex-start;
           }
 
+          .code-info {
+            width: 100%;
+            justify-content: space-between;
+          }
+
           .code-actions {
             align-self: flex-end;
+            flex-wrap: wrap;
           }
 
           .code-pre {
@@ -338,7 +477,27 @@ const CodeBlock = ({
 
           .line-number {
             width: 2.5rem;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+          }
+
+          .code-stats {
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            font-size: 0.7rem;
+          }
+
+          .code-action-btn {
+            font-size: 0.7rem;
+            padding: 2px var(--spacing-xs);
+          }
+
+          .code-action-btn span {
+            display: none;
+          }
+
+          .fullscreen .code-pre {
+            font-size: 0.875rem;
+            padding: var(--spacing-md);
           }
         }
 
@@ -346,12 +505,53 @@ const CodeBlock = ({
           .code-info {
             flex-direction: column;
             align-items: flex-start;
+            gap: var(--spacing-sm);
+          }
+
+          .code-language {
             gap: var(--spacing-xs);
           }
 
-          .code-action-btn {
-            font-size: 0.7rem;
-            padding: 2px var(--spacing-xs);
+          .language-name {
+            font-size: 0.8rem;
+          }
+
+          .code-actions {
+            gap: 2px;
+          }
+
+          .line-number {
+            width: 2rem;
+          }
+
+          .code-content.collapsed::after {
+            height: 40px;
+          }
+        }
+
+        /* Print styles */
+        @media print {
+          .code-header,
+          .code-expand {
+            display: none;
+          }
+
+          .code-block-container {
+            border: 1px solid #000;
+            break-inside: avoid;
+          }
+
+          .code-content {
+            max-height: none !important;
+          }
+
+          .code-pre {
+            color: #000;
+            font-size: 0.8rem;
+          }
+
+          .line-number {
+            color: #666;
           }
         }
       `}</style>

@@ -7,7 +7,9 @@ import {
   RotateCcw,
   CheckCircle,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft,
+  Award
 } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
@@ -16,17 +18,17 @@ import { QuizService, getLanguageDisplayName, getDifficultyDisplay, getPerforman
 import { PROGRAMMING_LANGUAGES } from '../utils/constants';
 
 const Quiz = ({ userPreferences, onPreferencesChange }) => {
-  const [gameState, setGameState] = useState('setup'); // setup, playing, completed
+  const [gameState, setGameState] = useState('setup'); // setup, playing, feedback, completed
   const [sessionData, setSessionData] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [answerFeedback, setAnswerFeedback] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState(userPreferences.language || 'python');
   const [selectedDifficulty, setSelectedDifficulty] = useState(userPreferences.difficulty || 'beginner');
   const [sessionSummary, setSessionSummary] = useState(null);
 
-  // Load quiz info on mount
   useEffect(() => {
     // Could load quiz stats or info here if needed
   }, []);
@@ -43,7 +45,6 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
         setCurrentQuestion(response.data.currentQuestion);
         setGameState('playing');
         
-        // Update user preferences
         onPreferencesChange({
           language: selectedLanguage,
           difficulty: selectedDifficulty
@@ -70,20 +71,29 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
       if (response.success) {
         const data = response.data;
         
+        // Set answer feedback
+        setAnswerFeedback({
+          correct: data.correct,
+          message: data.message,
+          correctAnswer: data.correctAnswer,
+          explanation: data.explanation,
+          selectedAnswer: selectedAnswer
+        });
+
         // Update session data with new score
         setSessionData(prev => ({
           ...prev,
           score: data.currentScore
         }));
 
+        // Move to feedback state
+        setGameState('feedback');
+
+        // Store next question or summary for later use
         if (data.hasNextQuestion) {
-          // Move to next question
           setCurrentQuestion(data.nextQuestion);
-          setSelectedAnswer('');
         } else {
-          // Quiz completed
           setSessionSummary(data.sessionSummary);
-          setGameState('completed');
         }
       } else {
         setError(response.error);
@@ -95,11 +105,24 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
     }
   };
 
+  const proceedToNext = () => {
+    if (answerFeedback && sessionSummary) {
+      // Quiz completed
+      setGameState('completed');
+    } else {
+      // Move to next question
+      setSelectedAnswer('');
+      setAnswerFeedback(null);
+      setGameState('playing');
+    }
+  };
+
   const resetQuiz = () => {
     setGameState('setup');
     setSessionData(null);
     setCurrentQuestion(null);
     setSelectedAnswer('');
+    setAnswerFeedback(null);
     setSessionSummary(null);
     setError(null);
   };
@@ -108,14 +131,19 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
     <div className="quiz-setup">
       <div className="setup-content">
         <div className="setup-header">
-          <Target size={48} />
+          <div className="setup-icon">
+            <Target size={48} />
+          </div>
           <h1>Programming Quiz Challenge</h1>
           <p>Test your programming knowledge with AI-generated questions</p>
         </div>
 
         <div className="setup-form">
           <div className="form-group">
-            <label className="form-label">Programming Language</label>
+            <label className="form-label">
+              <span className="label-icon">💻</span>
+              Programming Language
+            </label>
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
@@ -130,7 +158,10 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Difficulty Level</label>
+            <label className="form-label">
+              <span className="label-icon">🎯</span>
+              Difficulty Level
+            </label>
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
@@ -143,17 +174,19 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           </div>
 
           <div className="quiz-info">
-            <div className="info-item">
-              <Clock size={20} />
-              <span>5 Questions</span>
-            </div>
-            <div className="info-item">
-              <Target size={20} />
-              <span>Multiple Choice</span>
-            </div>
-            <div className="info-item">
-              <Trophy size={20} />
-              <span>Instant Feedback</span>
+            <div className="info-grid">
+              <div className="info-item">
+                <Clock size={20} />
+                <span>5 Questions</span>
+              </div>
+              <div className="info-item">
+                <Target size={20} />
+                <span>Multiple Choice</span>
+              </div>
+              <div className="info-item">
+                <Trophy size={20} />
+                <span>Instant Feedback</span>
+              </div>
             </div>
           </div>
 
@@ -183,8 +216,8 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
             <span className="question-number">
               Question {currentQuestion.questionNumber} of {sessionData.totalQuestions}
             </span>
-            <span className="quiz-language">
-              {getLanguageDisplayName(sessionData.language)} - {getDifficultyDisplay(selectedDifficulty).text}
+            <span className="quiz-meta">
+              {getLanguageDisplayName(sessionData.language)} • {getDifficultyDisplay(selectedDifficulty).text}
             </span>
           </div>
           <div className="progress-bar">
@@ -195,20 +228,26 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           </div>
         </div>
         <div className="current-score">
-          Score: {sessionData.score}/{sessionData.totalQuestions}
+          <Trophy size={16} />
+          <span>{sessionData.score}/{sessionData.totalQuestions}</span>
         </div>
       </div>
 
       <div className="question-card">
-        <h2 className="question-text">{currentQuestion.question}</h2>
+        <div className="question-header">
+          <h2 className="question-text">{currentQuestion.question}</h2>
+        </div>
         
         {currentQuestion.codeSnippet && (
-          <CodeBlock
-            code={currentQuestion.codeSnippet}
-            language={sessionData.language}
-            showLineNumbers={false}
-            maxHeight="200px"
-          />
+          <div className="question-code">
+            <CodeBlock
+              code={currentQuestion.codeSnippet}
+              language={sessionData.language}
+              showLineNumbers={true}
+              maxHeight="300px"
+              description="Code to analyze"
+            />
+          </div>
         )}
 
         <div className="answer-options">
@@ -237,7 +276,7 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           <button
             onClick={submitAnswer}
             disabled={!selectedAnswer || isSubmitting}
-            className="btn btn-primary"
+            className="btn btn-primary btn-lg"
           >
             {isSubmitting ? (
               <LoadingSpinner size="small" color="primary" />
@@ -245,6 +284,75 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
               <CheckCircle size={16} />
             )}
             {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFeedbackScreen = () => (
+    <div className="quiz-feedback">
+      <div className="feedback-content">
+        <div className="feedback-header">
+          <div className={`feedback-icon ${answerFeedback.correct ? 'correct' : 'incorrect'}`}>
+            {answerFeedback.correct ? (
+              <CheckCircle size={48} />
+            ) : (
+              <XCircle size={48} />
+            )}
+          </div>
+          <h2 className={`feedback-title ${answerFeedback.correct ? 'correct' : 'incorrect'}`}>
+            {answerFeedback.correct ? 'Correct!' : 'Incorrect'}
+          </h2>
+        </div>
+
+        <div className="feedback-details">
+          <div className="answer-comparison">
+            <div className="answer-item">
+              <span className="answer-label">Your Answer:</span>
+              <span className={`answer-value ${answerFeedback.correct ? 'correct' : 'incorrect'}`}>
+                {answerFeedback.selectedAnswer}
+              </span>
+            </div>
+            {!answerFeedback.correct && (
+              <div className="answer-item">
+                <span className="answer-label">Correct Answer:</span>
+                <span className="answer-value correct">
+                  {answerFeedback.correctAnswer}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="explanation-section">
+            <h3>Explanation</h3>
+            <p className="explanation-text">{answerFeedback.explanation}</p>
+          </div>
+
+          <div className="score-update">
+            <div className="score-item">
+              <Award size={20} />
+              <span>Current Score: {sessionData.score}/{sessionData.totalQuestions}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="feedback-actions">
+          <button
+            onClick={proceedToNext}
+            className="btn btn-primary btn-lg"
+          >
+            {sessionSummary ? (
+              <>
+                <Trophy size={20} />
+                View Results
+              </>
+            ) : (
+              <>
+                <ArrowRight size={20} />
+                Next Question
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -266,27 +374,29 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           </div>
 
           <div className="results-card">
-            <div className="result-item">
-              <span className="result-label">Final Score</span>
-              <span className="result-value">{sessionSummary.correctAnswers}/{sessionSummary.totalQuestions}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Percentage</span>
-              <span className="result-value">{sessionSummary.score}%</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Performance</span>
-              <span className={`result-value performance-${performance.color}`}>
-                {sessionSummary.performance}
-              </span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Language</span>
-              <span className="result-value">{sessionSummary.languageDisplayName}</span>
-            </div>
-            <div className="result-item">
-              <span className="result-label">Difficulty</span>
-              <span className="result-value">{getDifficultyDisplay(sessionSummary.difficulty).text}</span>
+            <div className="results-grid">
+              <div className="result-item">
+                <span className="result-label">Final Score</span>
+                <span className="result-value">{sessionSummary.correctAnswers}/{sessionSummary.totalQuestions}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Percentage</span>
+                <span className="result-value">{sessionSummary.score}%</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Performance</span>
+                <span className={`result-value performance-${performance.color}`}>
+                  {sessionSummary.performance}
+                </span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Language</span>
+                <span className="result-value">{sessionSummary.languageDisplayName}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Difficulty</span>
+                <span className="result-value">{getDifficultyDisplay(sessionSummary.difficulty).text}</span>
+              </div>
             </div>
           </div>
 
@@ -317,6 +427,7 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
 
         {gameState === 'setup' && renderSetupScreen()}
         {gameState === 'playing' && currentQuestion && renderQuestionScreen()}
+        {gameState === 'feedback' && answerFeedback && renderFeedbackScreen()}
         {gameState === 'completed' && sessionSummary && renderCompletedScreen()}
       </div>
 
@@ -331,12 +442,12 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           margin-bottom: var(--spacing-lg);
         }
 
-        /* Setup Screen */
+        /* Setup Screen Enhanced */
         .quiz-setup {
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 60vh;
+          min-height: 70vh;
         }
 
         .setup-content {
@@ -347,26 +458,34 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           max-width: 500px;
           width: 100%;
           text-align: center;
+          box-shadow: var(--shadow-xl);
+          backdrop-filter: blur(20px);
         }
 
         .setup-header {
           margin-bottom: var(--spacing-xl);
         }
 
-        .setup-header svg {
+        .setup-icon {
           color: var(--text-accent);
           margin-bottom: var(--spacing-md);
+          animation: pulse 2s infinite;
         }
 
         .setup-header h1 {
-          font-size: 2rem;
+          font-size: 2.25rem;
           color: var(--text-primary);
           margin-bottom: var(--spacing-sm);
+          background: var(--accent-gradient);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .setup-header p {
           color: var(--text-secondary);
           font-size: 1.1rem;
+          line-height: 1.6;
         }
 
         .setup-form {
@@ -376,30 +495,49 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           text-align: left;
         }
 
+        .label-icon {
+          margin-right: var(--spacing-xs);
+        }
+
         .quiz-info {
-          display: flex;
-          justify-content: space-around;
           background: var(--bg-tertiary);
           padding: var(--spacing-lg);
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-lg);
           border: 1px solid var(--border-secondary);
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--spacing-md);
         }
 
         .info-item {
           display: flex;
+          flex-direction: column;
           align-items: center;
           gap: var(--spacing-xs);
           color: var(--text-secondary);
           font-size: 0.9rem;
+          text-align: center;
         }
 
         .start-quiz-btn {
           margin-top: var(--spacing-md);
+          background: var(--accent-gradient);
+          border: none;
+          box-shadow: var(--shadow-lg);
+          transition: all var(--transition-normal);
         }
 
-        /* Game Screen */
+        .start-quiz-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-xl);
+        }
+
+        /* Game Screen Enhanced */
         .quiz-game {
-          max-width: 800px;
+          max-width: 900px;
           margin: 0 auto;
         }
 
@@ -412,6 +550,7 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          box-shadow: var(--shadow-md);
         }
 
         .quiz-progress {
@@ -428,24 +567,25 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
         .question-number {
           font-weight: 600;
           color: var(--text-primary);
+          font-size: 1.1rem;
         }
 
-        .quiz-language {
+        .quiz-meta {
           font-size: 0.9rem;
           color: var(--text-secondary);
         }
 
         .progress-bar {
-          height: 6px;
+          height: 8px;
           background: var(--bg-tertiary);
-          border-radius: 3px;
+          border-radius: 4px;
           overflow: hidden;
         }
 
         .progress-fill {
           height: 100%;
           background: var(--accent-gradient);
-          border-radius: 3px;
+          border-radius: 4px;
           transition: width var(--transition-normal);
         }
 
@@ -456,6 +596,9 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           border-radius: var(--radius-md);
           font-weight: 600;
           margin-left: var(--spacing-lg);
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-xs);
         }
 
         .question-card {
@@ -463,27 +606,35 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           border: 1px solid var(--border-secondary);
           border-radius: var(--radius-lg);
           padding: var(--spacing-xl);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .question-header {
+          margin-bottom: var(--spacing-lg);
         }
 
         .question-text {
           color: var(--text-primary);
           font-size: 1.25rem;
-          line-height: 1.5;
-          margin-bottom: var(--spacing-lg);
+          line-height: 1.6;
+          margin: 0;
+        }
+
+        .question-code {
+          margin: var(--spacing-lg) 0;
         }
 
         .answer-options {
           margin: var(--spacing-xl) 0;
-          display: flex;
-          flex-direction: column;
+          display: grid;
           gap: var(--spacing-md);
         }
 
         .answer-option {
           background: var(--bg-tertiary);
           border: 2px solid var(--border-secondary);
-          border-radius: var(--radius-md);
-          padding: var(--spacing-md);
+          border-radius: var(--radius-lg);
+          padding: var(--spacing-lg);
           cursor: pointer;
           transition: all var(--transition-fast);
           display: flex;
@@ -493,11 +644,14 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
         .answer-option:hover {
           border-color: var(--border-accent);
           background: var(--bg-secondary);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-md);
         }
 
         .answer-option.selected {
           border-color: var(--text-accent);
-          background: rgba(102, 126, 234, 0.1);
+          background: rgba(102, 126, 234, 0.15);
+          box-shadow: var(--shadow-md);
         }
 
         .answer-option input {
@@ -512,16 +666,17 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
         }
 
         .option-letter {
-          width: 2rem;
-          height: 2rem;
+          width: 2.5rem;
+          height: 2.5rem;
           background: var(--bg-primary);
           color: var(--text-accent);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: 600;
+          font-weight: 700;
           flex-shrink: 0;
+          font-size: 1.1rem;
         }
 
         .answer-option.selected .option-letter {
@@ -531,8 +686,8 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
 
         .option-text {
           color: var(--text-primary);
-          font-size: 0.95rem;
-          line-height: 1.4;
+          font-size: 1rem;
+          line-height: 1.5;
         }
 
         .question-actions {
@@ -540,12 +695,141 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           margin-top: var(--spacing-xl);
         }
 
-        /* Completed Screen */
+        /* Feedback Screen */
+        .quiz-feedback {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 70vh;
+        }
+
+        .feedback-content {
+          background: var(--bg-card);
+          border: 1px solid var(--border-secondary);
+          border-radius: var(--radius-xl);
+          padding: var(--spacing-2xl);
+          max-width: 700px;
+          width: 100%;
+          text-align: center;
+          box-shadow: var(--shadow-xl);
+        }
+
+        .feedback-header {
+          margin-bottom: var(--spacing-xl);
+        }
+
+        .feedback-icon {
+          margin-bottom: var(--spacing-md);
+        }
+
+        .feedback-icon.correct {
+          color: #48bb78;
+        }
+
+        .feedback-icon.incorrect {
+          color: #f56565;
+        }
+
+        .feedback-title {
+          font-size: 2rem;
+          margin: 0;
+          font-weight: 700;
+        }
+
+        .feedback-title.correct {
+          color: #48bb78;
+        }
+
+        .feedback-title.incorrect {
+          color: #f56565;
+        }
+
+        .feedback-details {
+          text-align: left;
+          margin-bottom: var(--spacing-xl);
+        }
+
+        .answer-comparison {
+          background: var(--bg-tertiary);
+          padding: var(--spacing-lg);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--spacing-lg);
+        }
+
+        .answer-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--spacing-sm);
+        }
+
+        .answer-item:last-child {
+          margin-bottom: 0;
+        }
+
+        .answer-label {
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+
+        .answer-value {
+          font-weight: 700;
+          font-size: 1.1rem;
+          padding: var(--spacing-xs) var(--spacing-sm);
+          border-radius: var(--radius-sm);
+        }
+
+        .answer-value.correct {
+          color: #48bb78;
+          background: rgba(72, 187, 120, 0.1);
+        }
+
+        .answer-value.incorrect {
+          color: #f56565;
+          background: rgba(245, 101, 101, 0.1);
+        }
+
+        .explanation-section h3 {
+          color: var(--text-primary);
+          margin-bottom: var(--spacing-md);
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+        }
+
+        .explanation-text {
+          color: var(--text-secondary);
+          line-height: 1.6;
+          font-size: 1rem;
+          background: var(--bg-tertiary);
+          padding: var(--spacing-lg);
+          border-radius: var(--radius-lg);
+          border-left: 4px solid var(--border-accent);
+        }
+
+        .score-update {
+          display: flex;
+          justify-content: center;
+          margin-top: var(--spacing-lg);
+        }
+
+        .score-item {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+          background: var(--accent-gradient);
+          color: var(--text-primary);
+          padding: var(--spacing-sm) var(--spacing-lg);
+          border-radius: var(--radius-md);
+          font-weight: 600;
+        }
+
+        /* Completed Screen Enhanced */
         .quiz-completed {
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 60vh;
+          min-height: 70vh;
         }
 
         .completion-content {
@@ -553,9 +837,10 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           border: 1px solid var(--border-secondary);
           border-radius: var(--radius-xl);
           padding: var(--spacing-2xl);
-          max-width: 600px;
+          max-width: 700px;
           width: 100%;
           text-align: center;
+          box-shadow: var(--shadow-xl);
         }
 
         .completion-header {
@@ -565,12 +850,17 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
         .completion-icon {
           font-size: 4rem;
           margin-bottom: var(--spacing-md);
+          animation: bounce 1s ease-in-out;
         }
 
         .completion-header h1 {
-          font-size: 2rem;
+          font-size: 2.25rem;
           color: var(--text-primary);
           margin-bottom: var(--spacing-sm);
+          background: var(--accent-gradient);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .completion-message {
@@ -583,11 +873,14 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           background: var(--bg-tertiary);
           border: 1px solid var(--border-secondary);
           border-radius: var(--radius-lg);
-          padding: var(--spacing-lg);
+          padding: var(--spacing-xl);
           margin-bottom: var(--spacing-xl);
+        }
+
+        .results-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: var(--spacing-md);
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--spacing-lg);
         }
 
         .result-item {
@@ -602,11 +895,12 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
           color: var(--text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          font-weight: 500;
         }
 
         .result-value {
-          font-size: 1.25rem;
-          font-weight: 600;
+          font-size: 1.5rem;
+          font-weight: 700;
           color: var(--text-primary);
         }
 
@@ -615,7 +909,18 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
         .performance-warning { color: #ed8936; }
         .performance-error { color: #f56565; }
 
-        /* Responsive Design */
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-10px); }
+          60% { transform: translateY(-5px); }
+        }
+
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+
+        /* Mobile Responsive Design */
         @media (max-width: 768px) {
           .quiz-header {
             flex-direction: column;
@@ -627,21 +932,43 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
             margin-left: 0;
           }
 
-          .quiz-info {
-            flex-direction: column;
-            gap: var(--spacing-md);
-            text-align: center;
-          }
-
-          .results-card {
+          .info-grid {
             grid-template-columns: 1fr;
             gap: var(--spacing-lg);
           }
 
+          .results-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
           .setup-content,
+          .feedback-content,
           .completion-content {
             padding: var(--spacing-xl);
             margin: 0 var(--spacing-md);
+          }
+
+          .question-card {
+            padding: var(--spacing-lg);
+          }
+
+          .answer-option {
+            padding: var(--spacing-md);
+          }
+
+          .option-letter {
+            width: 2rem;
+            height: 2rem;
+            font-size: 1rem;
+          }
+
+          .setup-header h1 {
+            font-size: 2rem;
+          }
+
+          .feedback-title,
+          .completion-header h1 {
+            font-size: 1.75rem;
           }
         }
 
@@ -650,19 +977,34 @@ const Quiz = ({ userPreferences, onPreferencesChange }) => {
             padding: var(--spacing-md) 0;
           }
 
-          .question-card {
-            padding: var(--spacing-lg);
-          }
-
           .question-text {
             font-size: 1.1rem;
           }
 
-          .option-content {
-            gap: var(--spacing-sm);
+          .option-text {
+            font-size: 0.9rem;
           }
 
-          .option-text {
+          .results-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .setup-content,
+          .feedback-content,
+          .completion-content {
+            padding: var(--spacing-lg);
+          }
+
+          .completion-icon {
+            font-size: 3rem;
+          }
+
+          .answer-comparison {
+            padding: var(--spacing-md);
+          }
+
+          .explanation-text {
+            padding: var(--spacing-md);
             font-size: 0.9rem;
           }
         }
