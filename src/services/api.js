@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://kz017zc2-8080.inc1.devtunnels.ms/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://spring-ai-embeddings.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

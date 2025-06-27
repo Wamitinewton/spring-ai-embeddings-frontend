@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Copy, Check, Code, Download, Eye, EyeOff, Maximize2, Minimize2, Terminal } from 'lucide-react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { copyToClipboard, getLanguageInfo, deviceUtils } from '../../utils/helpers';
 import { CODE_LANGUAGES } from '../../utils/constants';
 
@@ -26,7 +28,6 @@ const CodeBlock = ({
   const displayLanguage = CODE_LANGUAGES[language.toLowerCase()] || language;
   const codeLines = code.split('\n');
   const shouldShowExpandButton = codeLines.length > 15;
-  const maxLineNumberWidth = String(codeLines.length).length;
 
   // Handle viewport changes for fullscreen
   useEffect(() => {
@@ -119,309 +120,28 @@ const CodeBlock = ({
     return extensions[lang.toLowerCase()] || 'txt';
   };
 
-  const getLanguageTheme = (lang) => {
-    const themes = {
-      javascript: {
-        bg: '#1e1e1e',
-        border: '#f7df1e',
-        headerBg: '#252526',
-        textColor: '#f7df1e',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#569cd6',
-        string: '#ce9178',
-        comment: '#6a9955',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#d4d4d4'
-      },
-      typescript: {
-        bg: '#1e1e1e',
-        border: '#3178c6',
-        headerBg: '#252526',
-        textColor: '#3178c6',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#569cd6',
-        string: '#ce9178',
-        comment: '#6a9955',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#d4d4d4'
-      },
-      python: {
-        bg: '#1e1e1e',
-        border: '#306998',
-        headerBg: '#252526',
-        textColor: '#306998',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#ff7043',
-        string: '#689f38',
-        comment: '#6a9955',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#d4d4d4'
-      },
-      java: {
-        bg: '#1e1e1e',
-        border: '#ed8936',
-        headerBg: '#252526',
-        textColor: '#ed8936',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#cc7832',
-        string: '#6a8759',
-        comment: '#6a9955',
-        number: '#6897bb',
-        function: '#ffc66d',
-        variable: '#9cdcfe',
-        operator: '#cc7832'
-      },
-      kotlin: {
-        bg: '#1e1e1e',
-        border: '#7f52ff',
-        headerBg: '#252526',
-        textColor: '#7f52ff',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#cf8e6d',
-        string: '#6aab73',
-        comment: '#7a7e85',
-        number: '#2aacb8',
-        function: '#56b6c2',
-        variable: '#e06c75',
-        operator: '#cf8e6d'
-      },
-      csharp: {
-        bg: '#1e1e1e',
-        border: '#512da8',
-        headerBg: '#252526',
-        textColor: '#512da8',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#569cd6',
-        string: '#d69d85',
-        comment: '#57a64a',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#569cd6'
-      },
-      cpp: {
-        bg: '#1e1e1e',
-        border: '#00d4aa',
-        headerBg: '#252526',
-        textColor: '#00d4aa',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#c586c0',
-        string: '#ce9178',
-        comment: '#6a9955',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#c586c0'
-      },
-      rust: {
-        bg: '#1e1e1e',
-        border: '#ce422b',
-        headerBg: '#252526',
-        textColor: '#ce422b',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#ff6b6b',
-        string: '#98c379',
-        comment: '#5c6370',
-        number: '#d19a66',
-        function: '#61afef',
-        variable: '#e06c75',
-        operator: '#56b6c2'
-      },
-      go: {
-        bg: '#1e1e1e',
-        border: '#00add8',
-        headerBg: '#252526',
-        textColor: '#00add8',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#ff6b6b',
-        string: '#98c379',
-        comment: '#5c6370',
-        number: '#d19a66',
-        function: '#61afef',
-        variable: '#e06c75',
-        operator: '#56b6c2'
-      },
-      swift: {
-        bg: '#1e1e1e',
-        border: '#fa7343',
-        headerBg: '#252526',
-        textColor: '#fa7343',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#ff6b6b',
-        string: '#98c379',
-        comment: '#5c6370',
-        number: '#d19a66',
-        function: '#61afef',
-        variable: '#e06c75',
-        operator: '#56b6c2'
-      },
-      json: {
-        bg: '#1e1e1e',
-        border: '#61dafb',
-        headerBg: '#252526',
-        textColor: '#61dafb',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#569cd6',
-        string: '#ce9178',
-        comment: '#6a9955',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#d4d4d4'
-      },
-      default: {
-        bg: '#1e1e1e',
-        border: '#4a5568',
-        headerBg: '#252526',
-        textColor: '#a0aec0',
-        lineNumber: '#858585',
-        text: '#d4d4d4',
-        keyword: '#569cd6',
-        string: '#ce9178',
-        comment: '#6a9955',
-        number: '#b5cea8',
-        function: '#dcdcaa',
-        variable: '#9cdcfe',
-        operator: '#d4d4d4'
-      }
+  // Map our language codes to react-syntax-highlighter language identifiers
+  const getSyntaxHighlighterLanguage = (lang) => {
+    const languageMap = {
+      javascript: 'javascript',
+      typescript: 'typescript',
+      python: 'python',
+      java: 'java',
+      kotlin: 'kotlin',
+      csharp: 'csharp',
+      cpp: 'cpp',
+      rust: 'rust',
+      go: 'go',
+      swift: 'swift',
+      json: 'json',
+      xml: 'xml',
+      yaml: 'yaml',
+      sql: 'sql',
+      bash: 'bash',
+      shell: 'bash',
+      text: 'text'
     };
-
-    return themes[lang.toLowerCase()] || themes.default;
-  };
-
-  const highlightCode = (code, lang) => {
-    if (!code) return '';
-    
-    const theme = getLanguageTheme(lang);
-    
-    // Basic syntax highlighting patterns
-    const patterns = {
-      // Comments
-      comment: [
-        /\/\/.*$/gm,
-        /\/\*[\s\S]*?\*\//gm,
-        /#.*$/gm,
-        /"""[\s\S]*?"""/gm,
-        /'''[\s\S]*?'''/gm
-      ],
-      // Strings
-      string: [
-        /"([^"\\]|\\.)*"/g,
-        /'([^'\\]|\\.)*'/g,
-        /`([^`\\]|\\.)*`/g
-      ],
-      // Keywords by language
-      keyword: {
-        javascript: /\b(function|const|let|var|class|if|else|for|while|return|import|export|from|default|async|await|try|catch|finally|throw|new|this|super|extends|static|public|private|protected)\b/g,
-        typescript: /\b(function|const|let|var|class|interface|type|enum|if|else|for|while|return|import|export|from|default|async|await|try|catch|finally|throw|new|this|super|extends|static|public|private|protected|readonly)\b/g,
-        python: /\b(def|class|if|elif|else|for|while|return|import|from|as|try|except|finally|raise|with|lambda|yield|global|nonlocal|and|or|not|in|is|True|False|None)\b/g,
-        java: /\b(public|private|protected|static|final|abstract|class|interface|extends|implements|if|else|for|while|return|import|package|try|catch|finally|throw|throws|new|this|super|void|int|String|boolean|double|float|long|short|byte|char)\b/g,
-        kotlin: /\b(fun|class|interface|object|val|var|if|else|when|for|while|return|import|package|try|catch|finally|throw|data|sealed|abstract|open|override|private|public|protected|internal|companion|init|constructor)\b/g,
-        csharp: /\b(public|private|protected|internal|static|readonly|const|class|interface|struct|enum|if|else|for|foreach|while|return|using|namespace|try|catch|finally|throw|new|this|base|virtual|override|abstract|sealed|void|int|string|bool|double|float|long|short|byte|char)\b/g,
-        cpp: /\b(int|char|float|double|void|bool|long|short|unsigned|signed|const|static|extern|inline|virtual|public|private|protected|class|struct|enum|union|if|else|for|while|return|include|using|namespace|try|catch|throw|new|delete|this|template|typename)\b/g,
-        rust: /\b(fn|let|mut|const|static|if|else|match|for|while|loop|return|use|mod|pub|struct|enum|impl|trait|type|where|unsafe|async|await|move|ref|self|Self|super|crate|true|false)\b/g,
-        go: /\b(func|var|const|type|struct|interface|if|else|for|range|return|import|package|go|defer|select|switch|case|default|fallthrough|break|continue|chan|map|true|false|nil)\b/g,
-        swift: /\b(func|let|var|class|struct|enum|protocol|if|else|for|while|return|import|try|catch|throw|guard|defer|self|Self|super|true|false|nil|public|private|internal|fileprivate|open|static|final|override|mutating|nonmutating)\b/g
-      },
-      // Numbers
-      number: /\b\d+(\.\d+)?\b/g,
-      // Functions
-      function: /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g,
-      // Operators
-      operator: /[+\-*/%=<>!&|^~?:]/g
-    };
-
-    let highlightedCode = code;
-    
-    // Apply syntax highlighting
-    const langPatterns = patterns.keyword[lang.toLowerCase()];
-    
-    // Escape HTML
-    highlightedCode = highlightedCode
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    // Highlight comments first (to avoid conflicts)
-    patterns.comment.forEach(pattern => {
-      highlightedCode = highlightedCode.replace(pattern, match => 
-        `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`
-      );
-    });
-
-    // Highlight strings
-    patterns.string.forEach(pattern => {
-      highlightedCode = highlightedCode.replace(pattern, match => 
-        `<span style="color: ${theme.string};">${match}</span>`
-      );
-    });
-
-    // Highlight keywords
-    if (langPatterns) {
-      highlightedCode = highlightedCode.replace(langPatterns, match => 
-        `<span style="color: ${theme.keyword}; font-weight: 600;">${match}</span>`
-      );
-    }
-
-    // Highlight numbers
-    highlightedCode = highlightedCode.replace(patterns.number, match => 
-      `<span style="color: ${theme.number};">${match}</span>`
-    );
-
-    // Highlight function calls
-    highlightedCode = highlightedCode.replace(patterns.function, match => {
-      const funcName = match.replace('(', '');
-      return `<span style="color: ${theme.function};">${funcName}</span>(`;
-    });
-
-    return highlightedCode;
-  };
-
-  const formatCode = (code) => {
-    if (!showNumbers) {
-      return (
-        <div 
-          className="code-content-inner"
-          dangerouslySetInnerHTML={{ 
-            __html: highlightCode(code, language) 
-          }}
-        />
-      );
-    }
-    
-    return codeLines.map((line, index) => (
-      <div key={index} className="code-line">
-        <span 
-          className="line-number"
-          style={{ minWidth: `${maxLineNumberWidth + 1}ch` }}
-        >
-          {index + 1}
-        </span>
-        <span 
-          className="line-content"
-          dangerouslySetInnerHTML={{ 
-            __html: highlightCode(line || ' ', language) 
-          }}
-        />
-      </div>
-    ));
+    return languageMap[lang.toLowerCase()] || 'text';
   };
 
   const getLanguageIcon = (lang) => {
@@ -446,15 +166,28 @@ const CodeBlock = ({
     return icons[lang.toLowerCase()] || '📄';
   };
 
-  const theme = getLanguageTheme(language);
+  // Custom style based on theme but compatible with react-syntax-highlighter
+  const customStyle = {
+    margin: 0,
+    padding: deviceUtils.isMobile() ? '1rem' : '1.5rem',
+    background: 'transparent',
+    fontSize: deviceUtils.isMobile() ? '0.8rem' : fullscreen ? '1rem' : '0.875rem',
+    lineHeight: '1.6',
+    overflow: 'visible'
+  };
+
+  const codeTagProps = {
+    style: {
+      fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace"
+    }
+  };
 
   return (
     <div 
       className={`code-block-container ${fullscreen ? 'fullscreen' : ''} ${className}`}
       ref={containerRef}
       style={{ 
-        '--viewport-height': `${viewportHeight}px`,
-        '--max-line-width': `${maxLineNumberWidth + 1}ch`
+        '--viewport-height': `${viewportHeight}px`
       }}
     >
       {(description || filename) && (
@@ -538,15 +271,29 @@ const CodeBlock = ({
           style={{
             maxHeight: fullscreen 
               ? 'calc(var(--viewport-height) - 120px)' 
-              : (!expanded && shouldShowExpandButton ? '300px' : 'none'),
+              : (!expanded && shouldShowExpandButton ? '300px' : maxHeight),
             overflowY: fullscreen || expanded ? 'auto' : 'hidden'
           }}
         >
-          <pre className="code-pre">
-            <code className={`language-${displayLanguage}`}>
-              {formatCode(code)}
-            </code>
-          </pre>
+          <SyntaxHighlighter
+            language={getSyntaxHighlighterLanguage(language)}
+            style={vscDarkPlus}
+            showLineNumbers={showNumbers}
+            customStyle={customStyle}
+            codeTagProps={codeTagProps}
+            wrapLines={true}
+            wrapLongLines={true}
+            lineNumberStyle={{
+              minWidth: '3em',
+              paddingRight: '1em',
+              textAlign: 'right',
+              userSelect: 'none',
+              opacity: 0.7,
+              fontSize: '0.85em'
+            }}
+          >
+            {code}
+          </SyntaxHighlighter>
         </div>
         
         {shouldShowExpandButton && !fullscreen && (
@@ -584,19 +331,18 @@ const CodeBlock = ({
           margin: var(--spacing-md) 0;
           border-radius: var(--radius-lg);
           overflow: hidden;
-          background: ${theme.bg};
-          border: 1px solid ${theme.border};
+          background: #1e1e1e;
+          border: 1px solid #333;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           transition: all var(--transition-normal);
           position: relative;
-          /* Force hardware acceleration */
           transform: translateZ(0);
           -webkit-transform: translateZ(0);
         }
 
         .code-block-container:hover {
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-          border-color: ${theme.textColor};
+          border-color: #667eea;
           transform: translateY(-1px);
           -webkit-transform: translateY(-1px);
         }
@@ -628,7 +374,6 @@ const CodeBlock = ({
           flex: 1;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
-          max-height: calc(var(--viewport-height) - 120px);
         }
 
         .fullscreen-backdrop {
@@ -663,18 +408,17 @@ const CodeBlock = ({
           border-color: rgba(255, 255, 255, 0.4);
         }
 
-        /* Description Section */
         .code-description {
-          background: ${theme.headerBg};
+          background: #252526;
           padding: var(--spacing-md);
-          border-bottom: 1px solid ${theme.border};
+          border-bottom: 1px solid #333;
         }
 
         .code-filename {
           display: flex;
           align-items: center;
           gap: var(--spacing-xs);
-          color: ${theme.textColor};
+          color: #667eea;
           font-family: var(--font-mono);
           font-size: 0.875rem;
           font-weight: 600;
@@ -688,14 +432,13 @@ const CodeBlock = ({
           line-height: 1.5;
         }
 
-        /* Enhanced Header */
         .code-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: var(--spacing-md);
-          background: ${theme.headerBg};
-          border-bottom: 1px solid ${theme.border};
+          background: #252526;
+          border-bottom: 1px solid #333;
           min-height: 60px;
         }
 
@@ -714,7 +457,7 @@ const CodeBlock = ({
           font-family: var(--font-mono);
           font-size: 0.875rem;
           font-weight: 600;
-          color: ${theme.textColor};
+          color: #667eea;
         }
 
         .language-icon {
@@ -732,7 +475,7 @@ const CodeBlock = ({
           align-items: center;
           gap: var(--spacing-md);
           font-size: 0.75rem;
-          color: ${theme.lineNumber};
+          color: #858585;
         }
 
         .code-stat {
@@ -745,7 +488,6 @@ const CodeBlock = ({
           white-space: nowrap;
         }
 
-        /* Enhanced Actions */
         .code-actions {
           display: flex;
           align-items: center;
@@ -759,7 +501,7 @@ const CodeBlock = ({
           gap: var(--spacing-xs);
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.2);
-          color: ${theme.lineNumber};
+          color: #858585;
           padding: var(--spacing-sm);
           border-radius: var(--radius-md);
           font-size: 0.75rem;
@@ -768,15 +510,14 @@ const CodeBlock = ({
           transition: all var(--transition-fast);
           white-space: nowrap;
           min-height: 36px;
-          /* Touch optimization */
           -webkit-tap-highlight-color: transparent;
           touch-action: manipulation;
         }
 
         .code-action-btn:hover {
           background: rgba(255, 255, 255, 0.2);
-          color: ${theme.textColor};
-          border-color: ${theme.textColor};
+          color: #667eea;
+          border-color: #667eea;
           transform: translateY(-1px);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
@@ -786,15 +527,15 @@ const CodeBlock = ({
         }
 
         .code-action-btn.primary {
-          background: ${theme.textColor};
-          color: ${theme.bg};
-          border-color: ${theme.textColor};
+          background: #667eea;
+          color: #1e1e1e;
+          border-color: #667eea;
         }
 
         .code-action-btn.primary:hover {
-          background: ${theme.textColor};
+          background: #667eea;
           opacity: 0.9;
-          color: ${theme.bg};
+          color: #1e1e1e;
         }
 
         .code-action-btn.copied {
@@ -803,18 +544,16 @@ const CodeBlock = ({
           border-color: rgba(72, 187, 120, 0.8);
         }
 
-        /* Enhanced Code Content */
         .code-content {
           transition: max-height var(--transition-normal);
           position: relative;
-          background: ${theme.bg};
+          background: #1e1e1e;
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
         }
 
         .code-content.collapsed {
           overflow-y: hidden;
-          max-height: 300px;
         }
 
         .code-content.collapsed::after {
@@ -824,98 +563,16 @@ const CodeBlock = ({
           left: 0;
           right: 0;
           height: 60px;
-          background: linear-gradient(transparent, ${theme.bg});
+          background: linear-gradient(transparent, #1e1e1e);
           pointer-events: none;
           z-index: 2;
         }
 
-        /* When expanded or in fullscreen, allow scrolling */
-        .code-content:not(.collapsed) {
-          overflow-y: auto;
-          max-height: 80vh;
-        }
-
-        .code-pre {
-          margin: 0;
-          padding: 0;
-          overflow-x: auto;
-          overflow-y: visible;
-          font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
-          font-size: 0.875rem;
-          line-height: 1.6;
-          color: ${theme.text};
-          background: transparent;
-          /* Better scrolling */
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: thin;
-          scrollbar-color: ${theme.border} ${theme.bg};
-          width: 100%;
-          min-height: 100%;
-        }
-
-        .fullscreen .code-pre {
-          font-size: 1rem;
-          padding: var(--spacing-lg);
-        }
-
-        .code-content-inner {
-          padding: var(--spacing-lg);
-          white-space: pre;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-        }
-
-        /* Enhanced Line Display */
-        .code-line {
-          display: flex;
-          min-height: 1.6em;
-          align-items: flex-start;
-          transition: background-color var(--transition-fast);
-          padding: 0 var(--spacing-lg);
-          position: relative;
-        }
-
-        .code-line:hover {
-          background: rgba(255, 255, 255, 0.03);
-        }
-
-        .line-number {
-          display: inline-block;
-          text-align: right;
-          color: ${theme.lineNumber};
-          user-select: none;
-          margin-right: var(--spacing-lg);
-          flex-shrink: 0;
-          font-size: 0.8em;
-          opacity: 0.7;
-          font-weight: 400;
-          padding: 0.2em 0;
-          min-width: var(--max-line-width);
-          border-right: 1px solid rgba(255, 255, 255, 0.1);
-          padding-right: var(--spacing-md);
-          font-variant-numeric: tabular-nums;
-        }
-
-        .line-content {
-          flex: 1;
-          white-space: pre;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          padding: 0.2em 0;
-          min-width: 0;
-        }
-
-        /* Syntax Highlighting Styles */
-        .line-content span {
-          font-weight: inherit;
-        }
-
-        /* Expand Button */
         .code-expand {
           text-align: center;
           padding: var(--spacing-md);
-          background: ${theme.headerBg};
-          border-top: 1px solid ${theme.border};
+          background: #252526;
+          border-top: 1px solid #333;
         }
 
         .expand-button {
@@ -925,7 +582,7 @@ const CodeBlock = ({
           gap: var(--spacing-sm);
           background: rgba(255, 255, 255, 0.1);
           border: 1px solid rgba(255, 255, 255, 0.2);
-          color: ${theme.textColor};
+          color: #667eea;
           padding: var(--spacing-sm) var(--spacing-lg);
           border-radius: var(--radius-md);
           font-size: 0.875rem;
@@ -940,7 +597,7 @@ const CodeBlock = ({
 
         .expand-button:hover {
           background: rgba(255, 255, 255, 0.2);
-          border-color: ${theme.textColor};
+          border-color: #667eea;
           transform: translateY(-1px);
         }
 
@@ -956,42 +613,22 @@ const CodeBlock = ({
         }
 
         .code-content::-webkit-scrollbar-track {
-          background: ${theme.headerBg};
+          background: #252526;
           border-radius: 4px;
         }
 
         .code-content::-webkit-scrollbar-thumb {
-          background: ${theme.border};
+          background: #333;
           border-radius: 4px;
-          border: 2px solid ${theme.headerBg};
+          border: 2px solid #252526;
         }
 
         .code-content::-webkit-scrollbar-thumb:hover {
-          background: ${theme.textColor};
+          background: #667eea;
         }
 
         .code-content::-webkit-scrollbar-corner {
-          background: ${theme.headerBg};
-        }
-
-        .code-pre::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-
-        .code-pre::-webkit-scrollbar-track {
-          background: ${theme.bg};
-          border-radius: 4px;
-        }
-
-        .code-pre::-webkit-scrollbar-thumb {
-          background: ${theme.border};
-          border-radius: 4px;
-          border: 2px solid ${theme.bg};
-        }
-
-        .code-pre::-webkit-scrollbar-thumb:hover {
-          background: ${theme.textColor};
+          background: #252526;
         }
 
         /* Mobile Responsive Design */
@@ -1033,21 +670,6 @@ const CodeBlock = ({
             display: none;
           }
 
-          .code-pre {
-            font-size: 0.8rem;
-            padding: 0;
-          }
-
-          .code-line {
-            padding: 0 var(--spacing-md);
-          }
-
-          .line-number {
-            font-size: 0.7rem;
-            margin-right: var(--spacing-sm);
-            padding-right: var(--spacing-xs);
-          }
-
           .code-content.collapsed::after {
             height: 40px;
           }
@@ -1060,16 +682,6 @@ const CodeBlock = ({
             font-size: 0.8rem;
             padding: var(--spacing-sm);
             max-width: none;
-          }
-
-          /* Mobile fullscreen optimization */
-          .fullscreen .code-pre {
-            font-size: 0.875rem;
-            padding: var(--spacing-md);
-          }
-
-          .fullscreen .code-line {
-            padding: 0 var(--spacing-sm);
           }
 
           .fullscreen-close {
@@ -1108,61 +720,6 @@ const CodeBlock = ({
             min-width: 40px;
             min-height: 40px;
           }
-
-          .line-number {
-            min-width: 2ch;
-          }
-
-          .code-pre {
-            font-size: 0.75rem;
-          }
-
-          .code-line {
-            padding: 0 var(--spacing-sm);
-          }
-
-          .line-content {
-            font-size: 0.75rem;
-          }
-
-          .fullscreen .code-pre {
-            font-size: 0.8rem;
-          }
-        }
-
-        /* Landscape Mobile Optimization */
-        @media (max-width: 768px) and (orientation: landscape) {
-          .code-header {
-            flex-direction: row;
-            align-items: center;
-            padding: var(--spacing-sm) var(--spacing-md);
-          }
-
-          .code-info {
-            flex-direction: row;
-            align-items: center;
-          }
-
-          .code-stats {
-            flex-direction: row;
-            align-items: center;
-          }
-
-          .code-actions {
-            width: auto;
-          }
-        }
-
-        /* Tablet Optimization */
-        @media (min-width: 481px) and (max-width: 768px) {
-          .code-actions {
-            justify-content: flex-end;
-          }
-
-          .code-action-btn span {
-            display: inline;
-            font-size: 0.7rem;
-          }
         }
 
         /* Desktop Enhancements */
@@ -1171,85 +728,8 @@ const CodeBlock = ({
             padding: var(--spacing-lg);
           }
 
-          .code-pre {
-            font-size: 0.9rem;
-          }
-
-          .code-line {
-            padding: 0 var(--spacing-xl);
-          }
-
-          .line-number {
-            margin-right: var(--spacing-xl);
-            padding-right: var(--spacing-md);
-          }
-
           .code-content.collapsed::after {
             height: 80px;
-          }
-
-          .fullscreen .code-pre {
-            font-size: 1.1rem;
-            padding: var(--spacing-xl);
-          }
-
-          .fullscreen .code-line {
-            padding: 0 var(--spacing-xl);
-          }
-        }
-
-        /* High DPI Display Optimization */
-        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-          .code-pre {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-          }
-
-          .line-number {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-          }
-        }
-
-        /* Print Styles */
-        @media print {
-          .code-header,
-          .code-expand,
-          .code-actions,
-          .fullscreen-overlay,
-          .fullscreen-close {
-            display: none !important;
-          }
-
-          .code-block-container {
-            border: 2px solid #000;
-            break-inside: avoid;
-            background: white !important;
-            box-shadow: none;
-          }
-
-          .code-content {
-            max-height: none !important;
-            overflow: visible !important;
-          }
-
-          .code-pre {
-            color: #000 !important;
-            font-size: 0.7rem;
-            background: white !important;
-          }
-
-          .line-number {
-            color: #666 !important;
-          }
-
-          .line-content,
-          .line-content * {
-            color: #000 !important;
-          }
-
-          .code-line:hover {
-            background: none !important;
           }
         }
 
@@ -1278,140 +758,41 @@ const CodeBlock = ({
           .code-action-btn {
             border-width: 2px;
           }
-
-          .line-number {
-            border-right-width: 2px;
-          }
         }
 
         /* Focus Management */
         .code-action-btn:focus {
-          outline: 2px solid ${theme.textColor};
+          outline: 2px solid #667eea;
           outline-offset: 2px;
         }
 
         .expand-button:focus {
-          outline: 2px solid ${theme.textColor};
+          outline: 2px solid #667eea;
           outline-offset: 2px;
         }
 
-        /* Selection Styling */
-        .code-pre ::selection {
-          background: rgba(255, 255, 255, 0.2);
-          color: inherit;
-        }
-
-        .code-pre ::-moz-selection {
-          background: rgba(255, 255, 255, 0.2);
-          color: inherit;
-        }
-
-        /* Loading State */
-        .code-block-container.loading {
-          opacity: 0.7;
-          pointer-events: none;
-        }
-
-        .code-block-container.loading .code-pre {
-          filter: blur(1px);
-        }
-
-        /* Enhanced Visual Feedback */
-        @keyframes codeBlockSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
+        /* Print styles */
+        @media print {
+          .code-header,
+          .code-expand,
+          .code-actions,
+          .fullscreen-close {
+            display: none !important;
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
 
-        .code-block-container {
-          animation: codeBlockSlideIn 0.3s ease-out;
-        }
-
-        @keyframes copySuccess {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
-        }
-
-        .code-action-btn.copied {
-          animation: copySuccess 0.3s ease-out;
-        }
-
-        /* Touch Device Optimizations */
-        @media (hover: none) and (pointer: coarse) {
-          .code-action-btn:hover {
-            transform: none;
+          .code-block-container {
+            border: 2px solid #000;
+            break-inside: avoid;
+            background: white !important;
             box-shadow: none;
           }
 
-          .code-action-btn:active {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0.95);
-          }
-
-          .expand-button:hover {
-            transform: none;
-          }
-
-          .expand-button:active {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0.98);
-          }
-
-          .code-line:hover {
-            background: none;
-          }
-
-          /* Better touch scrolling */
           .code-content {
-            -webkit-overflow-scrolling: touch;
-            overflow-scrolling: touch;
-          }
-
-          .code-pre {
-            -webkit-overflow-scrolling: touch;
-            overflow-scrolling: touch;
+            max-height: none !important;
+            overflow: visible !important;
           }
         }
-
-        /* Dark Theme Enhancements */
-        @media (prefers-color-scheme: dark) {
-          .code-block-container {
-            /* Already optimized for dark theme */
-          }
-        }
-
-        /* Performance Optimizations */
-        .code-block-container {
-          contain: layout style paint;
-          will-change: transform;
-        }
-
-        .code-content {
-          contain: layout style paint;
-        }
-
-        .fullscreen .code-content {
-          will-change: scroll-position;
-        }
-
-        /* Custom scrollbar for Firefox */
-        @-moz-document url-prefix() {
-          .code-content {
-            scrollbar-width: thin;
-            scrollbar-color: ${theme.border} ${theme.bg};
-          }
-
-          .code-pre {
-            scrollbar-width: thin;
-            scrollbar-color: ${theme.border} ${theme.bg};
-          }
-        }
+      
       `}</style>
     </div>
   );
