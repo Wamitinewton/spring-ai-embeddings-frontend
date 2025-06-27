@@ -20,22 +20,19 @@ function App() {
   const [error, setError] = useState(null);
   const [userPrefs, setUserPrefs] = useState(preferences.get());
 
-  // Check API health on app initialization
   useEffect(() => {
     const initializeApp = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        // Check if API is available
         const isHealthy = await checkApiHealth();
         setApiHealthy(isHealthy);
         
         if (!isHealthy) {
-          setError('Unable to connect to the backend server. Please ensure the server is running.');
+          setError('Unable to connect to the server');
         }
         
-        // Small delay for better UX
         setTimeout(() => {
           setIsLoading(false);
         }, 500);
@@ -50,14 +47,12 @@ function App() {
     initializeApp();
   }, []);
 
-  // Update user preferences
   const updatePreferences = (newPrefs) => {
     const updated = { ...userPrefs, ...newPrefs };
     setUserPrefs(updated);
     preferences.set(updated);
   };
 
-  // Retry API connection
   const retryConnection = async () => {
     setIsLoading(true);
     setError(null);
@@ -76,7 +71,6 @@ function App() {
     }
   };
 
-  // Show loading screen during initialization
   if (isLoading) {
     return (
       <div className="app-loading">
@@ -89,7 +83,6 @@ function App() {
     );
   }
 
-  // Show error screen if API is not available
   if (error && !apiHealthy) {
     return (
       <div className="app-error">

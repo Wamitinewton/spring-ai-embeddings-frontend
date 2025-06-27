@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Code2, Wifi, WifiOff, ChevronDown } from 'lucide-react';
+import { Menu, X, Code2, Wifi, WifiOff, ChevronRight } from 'lucide-react';
 import { NAVIGATION_ITEMS } from '../../utils/constants';
 
 const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMenuAnimating, setIsMenuAnimating] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -24,13 +25,13 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isMobileMenuOpen && !event.target.closest('.header-nav')) {
-        setIsMobileMenuOpen(false);
+        closeMobileMenu();
       }
     };
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
-        setIsMobileMenuOpen(false);
+        closeMobileMenu();
       }
     };
 
@@ -50,7 +51,23 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
   }, [isMobileMenuOpen]);
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    if (isMobileMenuOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  };
+
+  const openMobileMenu = () => {
+    setIsMenuAnimating(true);
+    setIsMobileMenuOpen(true);
+    setTimeout(() => setIsMenuAnimating(false), 300);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMenuAnimating(true);
+    setIsMobileMenuOpen(false);
+    setTimeout(() => setIsMenuAnimating(false), 300);
   };
 
   const isActivePath = (path) => {
@@ -58,10 +75,6 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
       return location.pathname === '/';
     }
     return location.pathname.startsWith(path);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -111,16 +124,18 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
             </div>
           </nav>
 
-          {/* Mobile Menu Toggle */}
+          {/* Enhanced Mobile Menu Toggle */}
           <button
-            className="mobile-menu-toggle"
+            className={`mobile-menu-toggle ${isMobileMenuOpen ? 'open' : ''}`}
             onClick={toggleMobileMenu}
             aria-label={isMobileMenuOpen ? 'Close mobile menu' : 'Open mobile menu'}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
           >
-            <span className="toggle-icon">
-              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <span className="hamburger">
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
             </span>
           </button>
         </div>
@@ -128,21 +143,24 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         {/* Mobile Navigation Overlay */}
         {isMobileMenuOpen && (
           <div 
-            className="mobile-overlay"
+            className={`mobile-overlay ${isMobileMenuOpen ? 'visible' : ''}`}
             onClick={closeMobileMenu}
             aria-hidden="true"
           />
         )}
 
-        {/* Mobile Navigation */}
+        {/* Enhanced Mobile Navigation */}
         <nav 
-          className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}
+          className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''} ${isMenuAnimating ? 'animating' : ''}`}
           id="mobile-navigation"
           aria-label="Mobile navigation"
         >
           <div className="mobile-nav-content">
             <div className="mobile-nav-header">
-              <h2 className="mobile-nav-title">Navigation</h2>
+              <div className="mobile-nav-brand">
+                <Code2 size={20} />
+                <span>Navigation</span>
+              </div>
               <button
                 className="mobile-nav-close"
                 onClick={closeMobileMenu}
@@ -153,29 +171,41 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
             </div>
 
             <div className="mobile-nav-links">
-              {NAVIGATION_ITEMS.map((item) => (
+              {NAVIGATION_ITEMS.map((item, index) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   className={`mobile-nav-link ${isActivePath(item.path) ? 'active' : ''}`}
                   onClick={closeMobileMenu}
+                  style={{ 
+                    animationDelay: isMobileMenuOpen ? `${index * 50}ms` : '0ms' 
+                  }}
                 >
                   <div className="mobile-link-content">
-                    <span className="mobile-nav-icon" aria-hidden="true">{item.icon}</span>
-                    <span className="mobile-nav-text">{item.name}</span>
+                    <div className="mobile-nav-icon-wrapper">
+                      <span className="mobile-nav-icon" aria-hidden="true">{item.icon}</span>
+                    </div>
+                    <div className="mobile-nav-text-wrapper">
+                      <span className="mobile-nav-text">{item.name}</span>
+                      {isActivePath(item.path) && (
+                        <span className="mobile-nav-active-indicator">Current page</span>
+                      )}
+                    </div>
                   </div>
-                  <ChevronDown size={16} className="mobile-nav-chevron" />
+                  <ChevronRight size={16} className="mobile-nav-chevron" />
                 </Link>
               ))}
             </div>
             
-            {/* Mobile Status */}
+            {/* Enhanced Mobile Status */}
             <div className="mobile-status-section">
               <div className="mobile-status-header">
                 <span>System Status</span>
               </div>
               <div className={`mobile-status-indicator ${apiHealthy ? 'online' : 'offline'}`}>
-                {apiHealthy ? <Wifi size={20} /> : <WifiOff size={20} />}
+                <div className="mobile-status-icon">
+                  {apiHealthy ? <Wifi size={20} /> : <WifiOff size={20} />}
+                </div>
                 <div className="mobile-status-content">
                   <span className="mobile-status-label">
                     API {apiHealthy ? 'Connected' : 'Disconnected'}
@@ -187,6 +217,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
                     }
                   </span>
                 </div>
+                <div className={`mobile-status-pulse ${apiHealthy ? 'online' : 'offline'}`}></div>
               </div>
             </div>
           </div>
@@ -201,13 +232,13 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           position: sticky;
           top: 0;
           z-index: 1000;
-          transition: all var(--transition-fast);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           padding-top: var(--mobile-safe-area-top);
         }
 
         .header-scrolled {
           background: rgba(15, 20, 25, 0.98);
-          box-shadow: var(--shadow-lg);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
           border-bottom-color: var(--border-primary);
         }
 
@@ -220,24 +251,24 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           position: relative;
         }
 
-        /* Brand Section */
+        /* Enhanced Brand Section */
         .header-brand {
           display: flex;
           align-items: center;
           gap: var(--spacing-sm);
           text-decoration: none;
           color: var(--text-primary);
-          transition: all var(--transition-fast);
+          transition: all 0.2s ease-out;
           min-height: 48px;
-          min-width: auto;
           padding: var(--spacing-xs);
           border-radius: var(--radius-md);
           flex-shrink: 0;
+          position: relative;
         }
 
         .header-brand:hover {
           background: rgba(102, 126, 234, 0.1);
-          transform: none;
+          transform: translateY(-1px);
         }
 
         .brand-icon {
@@ -246,6 +277,11 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          transition: transform 0.2s ease-out;
+        }
+
+        .header-brand:hover .brand-icon {
+          transform: rotate(5deg) scale(1.05);
         }
 
         .brand-content {
@@ -259,10 +295,11 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          font-size: 1.1rem;
+          font-size: clamp(0.9rem, 4vw, 1.1rem);
           font-weight: 700;
-          line-height: 1;
+          line-height: 1.1;
           white-space: nowrap;
+          transition: font-size 0.2s ease-out;
         }
 
         .brand-status {
@@ -271,10 +308,17 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           gap: 4px;
           font-size: 0.7rem;
           opacity: 0.8;
+          transition: opacity 0.2s ease-out;
         }
 
         .brand-status.offline {
           color: #fc8181;
+          animation: pulse-warning 2s infinite;
+        }
+
+        @keyframes pulse-warning {
+          0%, 100% { opacity: 0.8; }
+          50% { opacity: 1; }
         }
 
         .status-text {
@@ -305,7 +349,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           font-weight: 500;
           padding: var(--spacing-sm) var(--spacing-md);
           border-radius: var(--radius-md);
-          transition: all var(--transition-fast);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
           min-height: 44px;
           font-size: var(--font-size-sm);
@@ -315,7 +359,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         .nav-link:hover {
           color: var(--text-primary);
           background: rgba(102, 126, 234, 0.1);
-          transform: translateY(-1px);
+          transform: translateY(-2px);
         }
 
         .nav-link.active {
@@ -333,12 +377,23 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           height: 3px;
           background: var(--accent-gradient);
           border-radius: 2px;
+          animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+          from { width: 0; opacity: 0; }
+          to { width: 24px; opacity: 1; }
         }
 
         .nav-icon {
           font-size: 1.1rem;
           display: flex;
           align-items: center;
+          transition: transform 0.2s ease-out;
+        }
+
+        .nav-link:hover .nav-icon {
+          transform: scale(1.1);
         }
 
         .nav-text {
@@ -360,7 +415,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          transition: all var(--transition-fast);
+          transition: all 0.2s ease-out;
           border: 1px solid transparent;
         }
 
@@ -381,15 +436,15 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           height: 6px;
           border-radius: 50%;
           background: currentColor;
-          animation: pulse 2s infinite;
+          animation: status-pulse 2s infinite;
         }
 
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
+        @keyframes status-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.8); }
         }
 
-        /* Mobile Menu Toggle */
+        /* Enhanced Mobile Menu Toggle */
         .mobile-menu-toggle {
           display: flex;
           align-items: center;
@@ -400,7 +455,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           cursor: pointer;
           padding: var(--spacing-sm);
           border-radius: var(--radius-md);
-          transition: all var(--transition-fast);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           min-height: 48px;
           min-width: 48px;
           position: relative;
@@ -418,41 +473,81 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           outline-offset: 2px;
         }
 
-        .toggle-icon {
+        /* Hamburger Animation */
+        .hamburger {
           display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform var(--transition-fast);
+          flex-direction: column;
+          gap: 4px;
+          width: 20px;
+          height: 16px;
+          position: relative;
         }
 
-        /* Mobile Overlay */
+        .hamburger-line {
+          width: 100%;
+          height: 2px;
+          background: currentColor;
+          border-radius: 1px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-origin: center;
+        }
+
+        .mobile-menu-toggle.open .hamburger-line:nth-child(1) {
+          transform: translateY(6px) rotate(45deg);
+        }
+
+        .mobile-menu-toggle.open .hamburger-line:nth-child(2) {
+          opacity: 0;
+          transform: scaleX(0);
+        }
+
+        .mobile-menu-toggle.open .hamburger-line:nth-child(3) {
+          transform: translateY(-6px) rotate(-45deg);
+        }
+
+        /* Enhanced Mobile Overlay */
         .mobile-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.6);
           z-index: 999;
           opacity: 0;
-          animation: fadeIn 0.3s ease-out forwards;
+          animation: overlayFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          backdrop-filter: blur(4px);
         }
 
-        /* Mobile Navigation */
+        .mobile-overlay.visible {
+          opacity: 1;
+        }
+
+        @keyframes overlayFadeIn {
+          from { 
+            opacity: 0;
+            backdrop-filter: blur(0px);
+          }
+          to { 
+            opacity: 1;
+            backdrop-filter: blur(4px);
+          }
+        }
+
+        /* Enhanced Mobile Navigation */
         .mobile-nav {
           position: fixed;
           top: 0;
           right: -100%;
-          width: 85%;
-          max-width: 400px;
+          width: min(85%, 400px);
           height: 100vh;
           height: 100dvh;
           background: var(--bg-secondary);
           border-left: 1px solid var(--border-secondary);
           z-index: 1000;
-          transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           overflow-y: auto;
-          box-shadow: var(--shadow-xl);
+          box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
         }
 
         .mobile-nav.open {
@@ -476,11 +571,13 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           border-bottom: 1px solid var(--border-secondary);
         }
 
-        .mobile-nav-title {
+        .mobile-nav-brand {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
           color: var(--text-primary);
           font-size: var(--font-size-lg);
           font-weight: 600;
-          margin: 0;
         }
 
         .mobile-nav-close {
@@ -490,7 +587,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           padding: var(--spacing-sm);
           border-radius: var(--radius-md);
           cursor: pointer;
-          transition: all var(--transition-fast);
+          transition: all 0.2s ease-out;
           min-height: 44px;
           min-width: 44px;
           display: flex;
@@ -502,6 +599,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           background: var(--bg-tertiary);
           color: var(--text-primary);
           border-color: var(--border-accent);
+          transform: scale(1.05);
         }
 
         .mobile-nav-links {
@@ -520,10 +618,29 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           color: var(--text-secondary);
           padding: var(--spacing-lg);
           border-radius: var(--radius-lg);
-          transition: all var(--transition-fast);
-          min-height: 56px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          min-height: 60px;
           border: 1px solid transparent;
           position: relative;
+          opacity: 0;
+          transform: translateX(20px);
+          animation: slideInLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .mobile-nav.open .mobile-nav-link {
+          opacity: 1;
+          transform: translateX(0);
+        }
+
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
 
         .mobile-nav-link:hover {
@@ -534,34 +651,68 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         }
 
         .mobile-nav-link.active {
-          background: var(--accent-gradient);
+          background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(159, 122, 234, 0.2));
           color: var(--text-primary);
           border-color: var(--border-accent);
-          box-shadow: var(--shadow-md);
+          box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
         }
 
         .mobile-link-content {
           display: flex;
           align-items: center;
           gap: var(--spacing-md);
+          flex: 1;
+        }
+
+        .mobile-nav-icon-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border-radius: var(--radius-md);
+          background: rgba(102, 126, 234, 0.1);
+          transition: all 0.2s ease-out;
+        }
+
+        .mobile-nav-link:hover .mobile-nav-icon-wrapper {
+          background: rgba(102, 126, 234, 0.2);
+          transform: scale(1.1);
+        }
+
+        .mobile-nav-link.active .mobile-nav-icon-wrapper {
+          background: rgba(102, 126, 234, 0.3);
         }
 
         .mobile-nav-icon {
-          font-size: 1.25rem;
-          width: 24px;
+          font-size: 1.2rem;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
+        .mobile-nav-text-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
         .mobile-nav-text {
           font-size: var(--font-size-base);
           font-weight: 500;
+          line-height: 1.2;
+        }
+
+        .mobile-nav-active-indicator {
+          font-size: var(--font-size-xs);
+          color: var(--text-accent);
+          opacity: 0.8;
+          font-weight: 400;
         }
 
         .mobile-nav-chevron {
           opacity: 0.5;
-          transition: transform var(--transition-fast);
+          transition: all 0.2s ease-out;
         }
 
         .mobile-nav-link:hover .mobile-nav-chevron {
@@ -569,7 +720,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           opacity: 1;
         }
 
-        /* Mobile Status Section */
+        /* Enhanced Mobile Status Section */
         .mobile-status-section {
           margin-top: var(--spacing-xl);
           padding-top: var(--spacing-lg);
@@ -592,6 +743,8 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           padding: var(--spacing-lg);
           border-radius: var(--radius-lg);
           border: 1px solid;
+          position: relative;
+          overflow: hidden;
         }
 
         .mobile-status-indicator.online {
@@ -606,10 +759,18 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           border-color: rgba(245, 101, 101, 0.3);
         }
 
+        .mobile-status-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s ease-out;
+        }
+
         .mobile-status-content {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 4px;
+          flex: 1;
         }
 
         .mobile-status-label {
@@ -620,16 +781,45 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
         .mobile-status-description {
           font-size: var(--font-size-xs);
           opacity: 0.8;
+          line-height: 1.3;
         }
 
-        /* Tablet and Desktop Styles */
+        .mobile-status-pulse {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+
+        .mobile-status-pulse.online {
+          animation: status-pulse-mobile 2s infinite;
+        }
+
+        .mobile-status-pulse.offline {
+          animation: status-pulse-warning 1.5s infinite;
+        }
+
+        @keyframes status-pulse-mobile {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(1.2); }
+        }
+
+        @keyframes status-pulse-warning {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        /* Responsive Breakpoints */
         @media (min-width: 768px) {
           .header-container {
             padding: var(--spacing-md) 0;
           }
 
           .brand-text {
-            font-size: 1.25rem;
+            font-size: clamp(1.1rem, 3vw, 1.25rem);
           }
 
           .desktop-nav {
@@ -659,7 +849,7 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
 
         @media (min-width: 1024px) {
           .brand-text {
-            font-size: 1.5rem;
+            font-size: clamp(1.25rem, 2.5vw, 1.5rem);
           }
 
           .desktop-nav {
@@ -680,10 +870,14 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           }
         }
 
-        /* Very small screens */
+        /* Very small screens optimization */
         @media (max-width: 380px) {
+          .header-container {
+            padding: var(--spacing-xs) 0;
+          }
+
           .brand-text {
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 5vw, 0.9rem);
           }
 
           .brand-status {
@@ -700,7 +894,12 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
 
           .mobile-nav-link {
             padding: var(--spacing-md);
-            min-height: 52px;
+            min-height: 56px;
+          }
+
+          .mobile-nav-icon-wrapper {
+            width: 36px;
+            height: 36px;
           }
         }
 
@@ -720,8 +919,8 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           }
 
           .mobile-nav-link {
-            min-height: 48px;
-            padding: var(--spacing-sm) var(--spacing-md);
+            min-height: 52px;
+            padding: var(--spacing-md);
           }
         }
 
@@ -738,12 +937,25 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           .status-indicator {
             border-width: 2px;
           }
+
+          .mobile-status-indicator {
+            border-width: 2px;
+          }
         }
 
-        /* Animation for fade in */
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+          
+          .status-dot,
+          .mobile-status-pulse,
+          .brand-status.offline {
+            animation: none !important;
+          }
         }
 
         /* Focus management for accessibility */
@@ -751,10 +963,46 @@ const Header = ({ userPreferences, onPreferencesChange, apiHealthy }) => {
           scroll-margin-top: var(--spacing-lg);
         }
 
-        /* Prevent body scroll when mobile menu is open */
-        .mobile-nav.open ~ * {
-          filter: blur(2px);
-          pointer-events: none;
+        /* Prevent scroll when mobile menu is open */
+        body:has(.mobile-nav.open) {
+          overflow: hidden;
+        }
+
+        /* Dark mode adjustments */
+        @media (prefers-color-scheme: dark) {
+          .header-nav {
+            background: rgba(10, 15, 20, 0.95);
+          }
+          
+          .header-scrolled {
+            background: rgba(10, 15, 20, 0.98);
+          }
+          
+          .mobile-nav {
+            background: rgba(15, 20, 25, 0.98);
+            backdrop-filter: blur(20px);
+          }
+        }
+
+        /* Print styles */
+        @media print {
+          .header-nav {
+            position: static;
+            background: transparent;
+            border-bottom: 1px solid #000;
+            box-shadow: none;
+          }
+          
+          .mobile-menu-toggle,
+          .nav-status,
+          .mobile-nav {
+            display: none !important;
+          }
+          
+          .brand-text {
+            color: #000 !important;
+            -webkit-text-fill-color: #000 !important;
+          }
         }
       `}</style>
     </header>

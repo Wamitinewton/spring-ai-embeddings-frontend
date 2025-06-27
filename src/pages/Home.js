@@ -36,7 +36,6 @@ const Home = ({ userPreferences, apiHealthy }) => {
         setError(null);
 
         if (apiHealthy) {
-          // Load application info and stats
           const [infoResponse, healthResponse] = await Promise.all([
             apiMethods.get(endpoints.info).catch(() => null),
             apiMethods.get(endpoints.health).catch(() => null)
@@ -44,7 +43,6 @@ const Home = ({ userPreferences, apiHealthy }) => {
 
           setAppInfo(infoResponse);
           
-          // Mock stats for demo (replace with real API when available)
           setStats({
             totalQuestions: 1250,
             activeUsers: 89,
@@ -52,7 +50,6 @@ const Home = ({ userPreferences, apiHealthy }) => {
             successRate: 94
           });
 
-          // Load random fact on page load
           loadRandomFact();
         }
       } catch (err) {
