@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Lightbulb, RefreshCw, Copy, CheckCircle, Book, Code } from 'lucide-react';
+import { Send, Bot, User, Lightbulb, RefreshCw, Copy, CheckCircle, Book, Code, Menu, X, Settings } from 'lucide-react';
 import LoadingSpinner, { LoadingDots } from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import CodeBlock from '../components/chatbot/CodeBlock';
@@ -14,6 +14,7 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
   const [randomFact, setRandomFact] = useState(null);
   const [loadingFact, setLoadingFact] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -51,6 +52,31 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
     ]);
   }, []);
 
+  // Close sidebar when clicking outside or pressing escape
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSidebar && !event.target.closest('.sidebar-panel') && !event.target.closest('.sidebar-toggle')) {
+        setShowSidebar(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && showSidebar) {
+        setShowSidebar(false);
+      }
+    };
+
+    if (showSidebar) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showSidebar]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -71,6 +97,7 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
     setInput('');
     setIsLoading(true);
     setError(null);
+    setShowSidebar(false); // Close sidebar after sending
 
     try {
       const response = await ChatbotService.askQuestion(validation.question);
@@ -128,6 +155,7 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
     ]);
     setError(null);
     setRandomFact(null);
+    setShowSidebar(false);
   };
 
   const copyMessageContent = async (messageId, content) => {
@@ -142,14 +170,14 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
     if (message.type === 'user') {
       return (
         <div key={message.id} className="message user-message">
-          <div className="message-avatar">
-            <User size={20} />
-          </div>
-          <div className="message-content">
-            <div className="message-text user-text">{message.content}</div>
-            <div className="message-timestamp">
-              {message.timestamp.toLocaleTimeString()}
+          <div className="message-bubble user-bubble">
+            <div className="message-text">{message.content}</div>
+            <div className="message-time">
+              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
+          </div>
+          <div className="message-avatar user-avatar">
+            <User size={18} />
           </div>
         </div>
       );
@@ -159,16 +187,16 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
     
     return (
       <div key={message.id} className="message assistant-message">
-        <div className="message-avatar">
-          <Bot size={20} />
+        <div className="message-avatar assistant-avatar">
+          <Bot size={18} />
         </div>
-        <div className="message-content">
+        <div className="message-bubble assistant-bubble">
           <div className="message-header">
-            <div className="message-title-section">
-              <span className="message-title">AI Assistant</span>
-              <div className="message-meta">
-                <span className={`confidence-badge badge-${confidence.color}`}>
-                  {confidence.text} Confidence
+            <div className="message-meta">
+              <span className="message-sender">AI Assistant</span>
+              <div className="message-badges">
+                <span className={`confidence-badge ${confidence.color}`}>
+                  {confidence.text}
                 </span>
                 {message.content.responseTimeMs > 0 && (
                   <span className="response-time">
@@ -190,28 +218,27 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
             </button>
           </div>
           
-          <div className="message-text">
+          <div className="message-content">
             {message.content.summary && (
               <div className="message-summary">
-                <h4>Summary</h4>
-                <p>{message.content.summary}</p>
+                <strong>{message.content.summary}</strong>
               </div>
             )}
             
-            <div className="message-body">
+            <div className="message-text">
               {message.content.fullAnswer}
             </div>
             
             {/* Render sections if available */}
             {message.content.sections && message.content.sections.length > 0 && (
               <div className="message-sections">
-                <h4 className="sections-title">
+                <div className="sections-header">
                   <Book size={16} />
-                  Detailed Breakdown
-                </h4>
+                  <span>Detailed Breakdown</span>
+                </div>
                 {message.content.sections.map((section, index) => (
                   <div key={index} className="content-section">
-                    <h5 className="section-title">{section.title}</h5>
+                    <h4 className="section-title">{section.title}</h4>
                     <div className="section-content">
                       {section.content.split('\n').map((line, lineIndex) => (
                         <p key={lineIndex}>{line}</p>
@@ -231,10 +258,10 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
             {/* Render code examples */}
             {message.content.codeExamples && message.content.codeExamples.length > 0 && (
               <div className="message-code-examples">
-                <h4 className="code-examples-title">
+                <div className="code-examples-header">
                   <Code size={16} />
-                  Code Examples
-                </h4>
+                  <span>Code Examples</span>
+                </div>
                 {message.content.codeExamples.map((codeExample, index) => (
                   <CodeBlock
                     key={index}
@@ -251,7 +278,7 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           
           <div className="message-footer">
             <div className="message-timestamp">
-              {message.timestamp.toLocaleTimeString()}
+              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               {message.content.contextDocumentCount > 0 && (
                 <span className="context-info">
                   • {message.content.contextDocumentCount} docs referenced
@@ -265,319 +292,287 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
   };
 
   return (
-    <div className="chatbot-page">
-      <div className="container">
-        <div className="chatbot-layout">
-          {/* Sidebar */}
-          <div className="chatbot-sidebar">
-            <div className="sidebar-header">
-              <div className="sidebar-icon">
-                <Bot size={24} />
-              </div>
-              <h3>Programming Assistant</h3>
-              <p>Ask me anything about coding!</p>
-            </div>
-            
-            <div className="sidebar-actions">
-              <button 
-                className="btn btn-secondary sidebar-btn"
-                onClick={handleRandomFact}
-                disabled={loadingFact}
-              >
-                <Lightbulb size={16} />
-                {loadingFact ? 'Loading...' : 'Random Fact'}
-              </button>
-              
-              <button 
-                className="btn btn-secondary sidebar-btn"
-                onClick={clearChat}
-              >
-                <RefreshCw size={16} />
-                Clear Chat
-              </button>
-            </div>
-
-            {randomFact && (
-              <div className="random-fact">
-                <h4>💡 Did you know?</h4>
-                <p>{randomFact.fact}</p>
-                <div className="fact-meta">
-                  <span className="fact-language">{randomFact.language}</span>
-                  <span className="fact-category">{randomFact.category}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Quick tips */}
-            <div className="sidebar-tips">
-              <h4>💡 Quick Tips</h4>
-              <ul>
-                <li>Be specific about your programming language</li>
-                <li>Include code snippets when asking for debugging help</li>
-                <li>Ask about best practices and optimization</li>
-                <li>Request examples for better understanding</li>
-              </ul>
+    <div className="chatbot-fullscreen">
+      {/* Chat Header */}
+      <div className="chat-header">
+        <div className="header-left">
+          <button
+            className="sidebar-toggle"
+            onClick={() => setShowSidebar(!showSidebar)}
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="chat-title">
+            <Bot size={24} />
+            <div className="title-content">
+              <h1>AI Programming Assistant</h1>
+              <span className="chat-status">Online • Ready to help</span>
             </div>
           </div>
+        </div>
+        <div className="header-actions">
+          <button
+            className="header-btn"
+            onClick={clearChat}
+            title="Clear chat"
+          >
+            <RefreshCw size={18} />
+          </button>
+          <button
+            className="header-btn"
+            onClick={() => setShowSidebar(!showSidebar)}
+            title="Settings"
+          >
+            <Settings size={18} />
+          </button>
+        </div>
+      </div>
 
-          {/* Main Chat Area */}
-          <div className="chatbot-main">
-            <div className="chat-header">
-              <div className="chat-title">
-                <Bot size={20} />
-                <span>AI Programming Assistant</span>
+      {/* Main Chat Area */}
+      <div className="chat-container">
+        <div className="chat-messages">
+          {messages.map(renderMessage)}
+          
+          {isLoading && (
+            <div className="message assistant-message typing-message">
+              <div className="message-avatar assistant-avatar">
+                <Bot size={18} />
               </div>
-              <div className="chat-status">
-                <div className="status-dot"></div>
-                <span>Online</span>
+              <div className="message-bubble assistant-bubble typing-bubble">
+                <div className="typing-indicator">
+                  <LoadingDots size="medium" />
+                  <span>AI is thinking...</span>
+                </div>
               </div>
             </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
 
-            <div className="chat-messages">
-              {messages.map(renderMessage)}
-              
-              {isLoading && (
-                <div className="message assistant-message loading-message">
-                  <div className="message-avatar">
-                    <Bot size={20} />
-                  </div>
-                  <div className="message-content">
-                    <div className="message-text">
-                      <div className="typing-indicator">
-                        <LoadingDots size="medium" />
-                        <span>AI is thinking...</span>
-                      </div>
+        {error && (
+          <div className="error-container">
+            <ErrorMessage
+              message={error}
+              onDismiss={() => setError(null)}
+            />
+          </div>
+        )}
+
+        {/* Input Form */}
+        <div className="chat-input-section">
+          <form onSubmit={handleSubmit} className="chat-input-form">
+            <div className="input-wrapper">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask me anything about programming..."
+                className="chat-input"
+                disabled={isLoading}
+                maxLength={1000}
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+              />
+              <button
+                type="submit"
+                className="send-button"
+                disabled={isLoading || !input.trim()}
+                aria-label="Send message"
+              >
+                {isLoading ? (
+                  <LoadingSpinner size="small" />
+                ) : (
+                  <Send size={20} />
+                )}
+              </button>
+            </div>
+            <div className="input-meta">
+              <span className="char-count">{input.length}/1000</span>
+              <span className="input-hint">
+                Press Enter to send • Shift+Enter for new line
+              </span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Sidebar Panel */}
+      {showSidebar && (
+        <>
+          <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />
+          <div className="sidebar-panel">
+            <div className="sidebar-header">
+              <h3>Assistant Settings</h3>
+              <button
+                className="close-sidebar"
+                onClick={() => setShowSidebar(false)}
+                aria-label="Close sidebar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="sidebar-content">
+              <div className="sidebar-section">
+                <h4>Quick Actions</h4>
+                <div className="quick-actions">
+                  <button 
+                    className="action-btn"
+                    onClick={handleRandomFact}
+                    disabled={loadingFact}
+                  >
+                    <Lightbulb size={16} />
+                    {loadingFact ? 'Loading...' : 'Random Fact'}
+                  </button>
+                  
+                  <button 
+                    className="action-btn"
+                    onClick={clearChat}
+                  >
+                    <RefreshCw size={16} />
+                    Clear Chat
+                  </button>
+                </div>
+              </div>
+
+              {randomFact && (
+                <div className="sidebar-section">
+                  <h4>💡 Programming Fact</h4>
+                  <div className="fact-card">
+                    <p>{randomFact.fact}</p>
+                    <div className="fact-tags">
+                      <span className="fact-tag">{randomFact.language}</span>
+                      <span className="fact-tag">{randomFact.category}</span>
                     </div>
                   </div>
                 </div>
               )}
-              
-              <div ref={messagesEndRef} />
+
+              <div className="sidebar-section">
+                <h4>💡 Tips</h4>
+                <ul className="tips-list">
+                  <li>Be specific about your programming language</li>
+                  <li>Include code snippets for debugging help</li>
+                  <li>Ask about best practices and optimization</li>
+                  <li>Request examples for better understanding</li>
+                </ul>
+              </div>
             </div>
-
-            {error && (
-              <ErrorMessage
-                message={error}
-                onDismiss={() => setError(null)}
-                className="chat-error"
-              />
-            )}
-
-            {/* Input Form */}
-            <form onSubmit={handleSubmit} className="chat-input-form">
-              <div className="input-container">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask a programming question... (e.g., 'How do I implement a binary search in Python?')"
-                  className="chat-input"
-                  disabled={isLoading}
-                  maxLength={1000}
-                  rows={1}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit(e);
-                    }
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="send-button"
-                  disabled={isLoading || !input.trim()}
-                >
-                  <Send size={20} />
-                </button>
-              </div>
-              <div className="input-meta">
-                <span className="char-count">{input.length}/1000</span>
-                <span className="input-hint">
-                  Press Enter to send, Shift+Enter for new line
-                </span>
-              </div>
-            </form>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       <style jsx>{`
-        .chatbot-page {
-          min-height: calc(100vh - 140px);
-          padding: var(--spacing-lg) 0;
-          background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, transparent 50%);
-        }
-
-        .chatbot-layout {
-          display: grid;
-          grid-template-columns: 320px 1fr;
-          gap: var(--spacing-lg);
-          height: calc(100vh - 200px);
-          max-height: 900px;
-        }
-
-        /* Enhanced Sidebar */
-        .chatbot-sidebar {
-          background: var(--bg-card);
-          border: 1px solid var(--border-secondary);
-          border-radius: var(--radius-xl);
-          padding: var(--spacing-lg);
+        .chatbot-fullscreen {
+          height: 100vh;
+          height: 100dvh;
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-lg);
-          box-shadow: var(--shadow-lg);
-          backdrop-filter: blur(20px);
+          background: var(--primary-bg);
+          position: relative;
+          overflow: hidden;
         }
 
-        .sidebar-header {
-          text-align: center;
+        /* Chat Header */
+        .chat-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--spacing-md) var(--spacing-lg);
+          background: var(--bg-secondary);
           border-bottom: 1px solid var(--border-secondary);
-          padding-bottom: var(--spacing-lg);
+          flex-shrink: 0;
+          min-height: 70px;
         }
 
-        .sidebar-icon {
-          color: var(--text-accent);
-          margin-bottom: var(--spacing-sm);
-        }
-
-        .sidebar-header h3 {
-          color: var(--text-primary);
-          margin-bottom: var(--spacing-xs);
-          font-size: 1.1rem;
-        }
-
-        .sidebar-header p {
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          margin: 0;
-        }
-
-        .sidebar-actions {
+        .header-left {
           display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
+          align-items: center;
+          gap: var(--spacing-md);
+          flex: 1;
         }
 
-        .sidebar-btn {
-          width: 100%;
+        .sidebar-toggle {
+          background: transparent;
+          border: 1px solid var(--border-secondary);
+          color: var(--text-primary);
+          padding: var(--spacing-sm);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          min-height: 44px;
+          min-width: 44px;
+          display: flex;
+          align-items: center;
           justify-content: center;
         }
 
-        .random-fact {
+        .sidebar-toggle:hover {
           background: var(--bg-tertiary);
-          padding: var(--spacing-md);
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--border-secondary);
-          border-left: 4px solid var(--border-accent);
-        }
-
-        .random-fact h4 {
-          color: var(--text-primary);
-          margin-bottom: var(--spacing-sm);
-          font-size: 0.9rem;
-        }
-
-        .random-fact p {
-          color: var(--text-secondary);
-          font-size: 0.85rem;
-          line-height: 1.5;
-          margin-bottom: var(--spacing-sm);
-        }
-
-        .fact-meta {
-          display: flex;
-          gap: var(--spacing-xs);
-          flex-wrap: wrap;
-        }
-
-        .fact-language,
-        .fact-category {
-          background: var(--bg-primary);
-          color: var(--text-accent);
-          padding: 2px var(--spacing-xs);
-          border-radius: var(--radius-sm);
-          font-size: 0.7rem;
-          border: 1px solid var(--border-secondary);
-        }
-
-        .sidebar-tips {
-          background: rgba(102, 126, 234, 0.05);
-          padding: var(--spacing-md);
-          border-radius: var(--radius-lg);
-          border: 1px solid rgba(102, 126, 234, 0.1);
-        }
-
-        .sidebar-tips h4 {
-          color: var(--text-primary);
-          margin-bottom: var(--spacing-sm);
-          font-size: 0.9rem;
-        }
-
-        .sidebar-tips ul {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-
-        .sidebar-tips li {
-          color: var(--text-secondary);
-          font-size: 0.8rem;
-          line-height: 1.4;
-          margin-bottom: var(--spacing-xs);
-          padding-left: var(--spacing-sm);
-          position: relative;
-        }
-
-        .sidebar-tips li::before {
-          content: '•';
-          position: absolute;
-          left: 0;
-          color: var(--text-accent);
-        }
-
-        /* Enhanced Main Chat */
-        .chatbot-main {
-          background: var(--bg-card);
-          border: 1px solid var(--border-secondary);
-          border-radius: var(--radius-xl);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          box-shadow: var(--shadow-lg);
-          backdrop-filter: blur(20px);
-        }
-
-        .chat-header {
-          background: var(--bg-tertiary);
-          border-bottom: 1px solid var(--border-secondary);
-          padding: var(--spacing-lg);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          border-color: var(--border-accent);
         }
 
         .chat-title {
           display: flex;
           align-items: center;
-          gap: var(--spacing-sm);
+          gap: var(--spacing-md);
+          color: var(--text-accent);
+        }
+
+        .title-content h1 {
           color: var(--text-primary);
+          font-size: var(--font-size-lg);
           font-weight: 600;
+          margin: 0;
+          line-height: 1.2;
         }
 
         .chat-status {
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-xs);
           color: var(--text-secondary);
-          font-size: 0.875rem;
+          font-size: var(--font-size-sm);
+          font-weight: 400;
         }
 
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #48bb78;
-          animation: pulse 2s infinite;
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+        }
+
+        .header-btn {
+          background: transparent;
+          border: 1px solid var(--border-secondary);
+          color: var(--text-secondary);
+          padding: var(--spacing-sm);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          min-height: 44px;
+          min-width: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .header-btn:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          border-color: var(--border-accent);
+        }
+
+        /* Chat Container */
+        .chat-container {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
         }
 
         .chat-messages {
@@ -587,13 +582,17 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           display: flex;
           flex-direction: column;
           gap: var(--spacing-lg);
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
         }
 
+        /* Message Styles */
         .message {
           display: flex;
           gap: var(--spacing-md);
           align-items: flex-start;
-          max-width: 85%;
+          max-width: 80%;
+          animation: slideUp 0.3s ease-out;
         }
 
         .user-message {
@@ -605,13 +604,13 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           align-self: flex-start;
         }
 
-        .loading-message {
+        .typing-message {
           opacity: 0.8;
         }
 
         .message-avatar {
-          width: 2.5rem;
-          height: 2.5rem;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -619,42 +618,59 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           flex-shrink: 0;
         }
 
-        .user-message .message-avatar {
+        .user-avatar {
           background: var(--accent-gradient);
           color: var(--text-primary);
         }
 
-        .assistant-message .message-avatar {
+        .assistant-avatar {
           background: var(--bg-tertiary);
           color: var(--text-accent);
-          border: 1px solid var(--border-secondary);
+          border: 2px solid var(--border-secondary);
         }
 
-        .message-content {
-          flex: 1;
-          max-width: calc(100% - 3.5rem);
+        .message-bubble {
+          background: var(--bg-card);
+          border-radius: var(--radius-xl);
+          padding: var(--spacing-lg);
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-secondary);
+          position: relative;
+          max-width: 100%;
+          word-wrap: break-word;
+        }
+
+        .user-bubble {
+          background: var(--accent-gradient);
+          color: var(--text-primary);
+          border: none;
+        }
+
+        .typing-bubble {
+          background: var(--bg-tertiary);
         }
 
         .message-header {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          margin-bottom: var(--spacing-sm);
+          margin-bottom: var(--spacing-md);
+          gap: var(--spacing-sm);
         }
 
-        .message-title-section {
+        .message-meta {
           flex: 1;
         }
 
-        .message-title {
+        .message-sender {
           font-weight: 600;
           color: var(--text-primary);
-          font-size: 0.9rem;
+          font-size: var(--font-size-sm);
           display: block;
           margin-bottom: var(--spacing-xs);
         }
 
-        .message-meta {
+        .message-badges {
           display: flex;
           align-items: center;
           gap: var(--spacing-sm);
@@ -664,31 +680,31 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
         .confidence-badge {
           padding: 2px var(--spacing-xs);
           border-radius: var(--radius-sm);
-          font-size: 0.7rem;
+          font-size: var(--font-size-xs);
           font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
 
-        .badge-success { 
+        .confidence-badge.success { 
           background: rgba(72, 187, 120, 0.2);
           color: #9ae6b4;
         }
-        .badge-primary { 
+        .confidence-badge.primary { 
           background: rgba(102, 126, 234, 0.2);
           color: #a5b4fc;
         }
-        .badge-warning { 
+        .confidence-badge.warning { 
           background: rgba(237, 137, 54, 0.2);
           color: #fbb6ce;
         }
-        .badge-error { 
+        .confidence-badge.error { 
           background: rgba(245, 101, 101, 0.2);
           color: #fc8181;
         }
 
         .response-time {
-          font-size: 0.7rem;
+          font-size: var(--font-size-xs);
           color: var(--text-muted);
         }
 
@@ -703,6 +719,9 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           display: flex;
           align-items: center;
           justify-content: center;
+          min-height: 32px;
+          min-width: 32px;
+          flex-shrink: 0;
         }
 
         .copy-btn:hover {
@@ -711,45 +730,32 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           border-color: var(--border-accent);
         }
 
-        .message-text {
-          background: var(--bg-tertiary);
-          padding: var(--spacing-lg);
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--border-secondary);
+        .message-content {
+          color: var(--text-secondary);
           line-height: 1.6;
         }
 
-        .user-text {
-          background: var(--accent-gradient);
+        .message-text {
+          color: var(--text-secondary);
+          white-space: pre-wrap;
+          word-wrap: break-word;
+        }
+
+        .user-bubble .message-text {
           color: var(--text-primary);
-          border: none;
+        }
+
+        .message-time {
+          font-size: var(--font-size-xs);
+          color: rgba(255, 255, 255, 0.7);
+          margin-top: var(--spacing-sm);
+          text-align: right;
         }
 
         .message-summary {
-          margin-bottom: var(--spacing-lg);
-          padding-bottom: var(--spacing-md);
-          border-bottom: 1px solid var(--border-secondary);
-        }
-
-        .message-summary h4 {
+          margin-bottom: var(--spacing-md);
           color: var(--text-primary);
-          font-size: 1rem;
-          margin-bottom: var(--spacing-sm);
-          display: flex;
-          align-items: center;
-          gap: var(--spacing-xs);
-        }
-
-        .message-summary p {
-          color: var(--text-secondary);
-          margin: 0;
           font-weight: 500;
-        }
-
-        .message-body {
-          color: var(--text-secondary);
-          white-space: pre-wrap;
-          margin-bottom: var(--spacing-lg);
         }
 
         .message-sections {
@@ -758,13 +764,14 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           padding-top: var(--spacing-lg);
         }
 
-        .sections-title {
-          color: var(--text-primary);
-          font-size: 1rem;
-          margin-bottom: var(--spacing-md);
+        .sections-header {
           display: flex;
           align-items: center;
           gap: var(--spacing-xs);
+          color: var(--text-primary);
+          font-size: var(--font-size-sm);
+          font-weight: 600;
+          margin-bottom: var(--spacing-md);
         }
 
         .content-section {
@@ -775,20 +782,16 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           margin-bottom: var(--spacing-md);
         }
 
-        .content-section:last-child {
-          margin-bottom: 0;
-        }
-
         .section-title {
           color: var(--text-primary);
-          font-size: 0.95rem;
+          font-size: var(--font-size-sm);
           font-weight: 600;
           margin-bottom: var(--spacing-sm);
         }
 
         .section-content {
           color: var(--text-secondary);
-          font-size: 0.9rem;
+          font-size: var(--font-size-sm);
           line-height: 1.5;
         }
 
@@ -808,7 +811,7 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           padding-top: var(--spacing-sm);
           border-top: 1px solid rgba(102, 126, 234, 0.2);
           color: var(--text-accent);
-          font-size: 0.8rem;
+          font-size: var(--font-size-xs);
         }
 
         .message-code-examples {
@@ -817,21 +820,24 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           padding-top: var(--spacing-lg);
         }
 
-        .code-examples-title {
-          color: var(--text-primary);
-          font-size: 1rem;
-          margin-bottom: var(--spacing-md);
+        .code-examples-header {
           display: flex;
           align-items: center;
           gap: var(--spacing-xs);
+          color: var(--text-primary);
+          font-size: var(--font-size-sm);
+          font-weight: 600;
+          margin-bottom: var(--spacing-md);
         }
 
         .message-footer {
-          margin-top: var(--spacing-sm);
+          margin-top: var(--spacing-md);
+          padding-top: var(--spacing-sm);
+          border-top: 1px solid var(--border-secondary);
         }
 
         .message-timestamp {
-          font-size: 0.75rem;
+          font-size: var(--font-size-xs);
           color: var(--text-muted);
         }
 
@@ -846,41 +852,60 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           color: var(--text-secondary);
         }
 
-        .chat-error {
-          margin: 0 var(--spacing-lg);
+        .error-container {
+          padding: 0 var(--spacing-lg);
+          flex-shrink: 0;
         }
 
-        /* Enhanced Input Form */
-        .chat-input-form {
+        /* Input Section */
+        .chat-input-section {
+          background: var(--bg-secondary);
           border-top: 1px solid var(--border-secondary);
           padding: var(--spacing-lg);
-          background: var(--bg-tertiary);
+          flex-shrink: 0;
         }
 
-        .input-container {
+        .chat-input-form {
+          max-width: 800px;
+          margin: 0 auto;
+        }
+
+        .input-wrapper {
           display: flex;
           gap: var(--spacing-sm);
           align-items: flex-end;
+          background: var(--bg-input);
+          border: 2px solid var(--border-secondary);
+          border-radius: var(--radius-xl);
+          padding: var(--spacing-sm);
+          transition: all var(--transition-fast);
+        }
+
+        .input-wrapper:focus-within {
+          border-color: var(--border-accent);
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .chat-input {
           flex: 1;
-          background: var(--bg-input);
-          border: 1px solid var(--border-secondary);
-          border-radius: var(--radius-lg);
-          padding: var(--spacing-md);
+          background: transparent;
+          border: none;
           color: var(--text-primary);
-          font-size: 0.9rem;
+          font-size: 16px; /* Prevent zoom on iOS */
           resize: none;
           max-height: 120px;
+          min-height: 44px;
           font-family: inherit;
-          transition: all var(--transition-fast);
+          line-height: 1.5;
+          padding: var(--spacing-sm);
         }
 
         .chat-input:focus {
           outline: none;
-          border-color: var(--border-accent);
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-input::placeholder {
+          color: var(--text-muted);
         }
 
         .send-button {
@@ -888,19 +913,20 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           color: var(--text-primary);
           border: none;
           border-radius: var(--radius-lg);
-          padding: var(--spacing-md);
+          padding: var(--spacing-sm);
           cursor: pointer;
           transition: all var(--transition-fast);
           display: flex;
           align-items: center;
           justify-content: center;
-          min-width: 3rem;
-          height: 3rem;
-          box-shadow: var(--shadow-md);
+          min-width: 48px;
+          min-height: 48px;
+          box-shadow: var(--shadow-sm);
+          flex-shrink: 0;
         }
 
         .send-button:hover:not(:disabled) {
-          box-shadow: var(--shadow-lg);
+          box-shadow: var(--shadow-md);
           transform: translateY(-1px);
         }
 
@@ -915,38 +941,223 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
           justify-content: space-between;
           align-items: center;
           margin-top: var(--spacing-sm);
-          font-size: 0.75rem;
+          font-size: var(--font-size-xs);
           color: var(--text-muted);
         }
 
-        /* Enhanced Mobile Responsive Design */
+        /* Sidebar Panel */
+        .sidebar-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .sidebar-panel {
+          position: fixed;
+          top: 0;
+          right: 0;
+          width: 350px;
+          height: 100vh;
+          height: 100dvh;
+          background: var(--bg-card);
+          border-left: 1px solid var(--border-secondary);
+          z-index: 1000;
+          display: flex;
+          flex-direction: column;
+          animation: slideInRight 0.3s ease;
+          box-shadow: var(--shadow-xl);
+        }
+
+        .sidebar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--spacing-lg);
+          border-bottom: 1px solid var(--border-secondary);
+          background: var(--bg-tertiary);
+        }
+
+        .sidebar-header h3 {
+          color: var(--text-primary);
+          font-size: var(--font-size-lg);
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .close-sidebar {
+          background: transparent;
+          border: 1px solid var(--border-secondary);
+          color: var(--text-secondary);
+          padding: var(--spacing-sm);
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          min-height: 44px;
+          min-width: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .close-sidebar:hover {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          border-color: var(--border-accent);
+        }
+
+        .sidebar-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: var(--spacing-lg);
+        }
+
+        .sidebar-section {
+          margin-bottom: var(--spacing-xl);
+        }
+
+        .sidebar-section h4 {
+          color: var(--text-primary);
+          font-size: var(--font-size-base);
+          font-weight: 600;
+          margin-bottom: var(--spacing-md);
+        }
+
+        .quick-actions {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: var(--spacing-sm);
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-secondary);
+          color: var(--text-secondary);
+          padding: var(--spacing-md);
+          border-radius: var(--radius-lg);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          font-size: var(--font-size-sm);
+          min-height: 48px;
+        }
+
+        .action-btn:hover:not(:disabled) {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          border-color: var(--border-accent);
+          transform: translateY(-1px);
+        }
+
+        .action-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .fact-card {
+          background: var(--bg-tertiary);
+          padding: var(--spacing-lg);
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-secondary);
+          border-left: 4px solid var(--border-accent);
+        }
+
+        .fact-card p {
+          color: var(--text-secondary);
+          line-height: 1.6;
+          margin-bottom: var(--spacing-md);
+        }
+
+        .fact-tags {
+          display: flex;
+          gap: var(--spacing-xs);
+          flex-wrap: wrap;
+        }
+
+        .fact-tag {
+          background: var(--bg-primary);
+          color: var(--text-accent);
+          padding: var(--spacing-xs) var(--spacing-sm);
+          border-radius: var(--radius-sm);
+          font-size: var(--font-size-xs);
+          border: 1px solid var(--border-secondary);
+          font-weight: 500;
+        }
+
+        .tips-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .tips-list li {
+          color: var(--text-secondary);
+          font-size: var(--font-size-sm);
+          line-height: 1.5;
+          margin-bottom: var(--spacing-sm);
+          padding-left: var(--spacing-lg);
+          position: relative;
+        }
+
+        .tips-list li::before {
+          content: '•';
+          position: absolute;
+          left: 0;
+          color: var(--text-accent);
+          font-weight: bold;
+        }
+
+        /* Mobile Responsive Design */
         @media (max-width: 768px) {
-          .chatbot-layout {
-            grid-template-columns: 1fr;
-            gap: var(--spacing-md);
-            height: calc(100vh - 160px);
-          }
-
-          .chatbot-sidebar {
+          .chat-header {
             padding: var(--spacing-md);
-            order: 2;
-            height: auto;
-            max-height: 300px;
-            overflow-y: auto;
+            min-height: 60px;
           }
 
-          .chatbot-main {
-            order: 1;
-            height: 500px;
+          .title-content h1 {
+            font-size: var(--font-size-base);
           }
 
-          .sidebar-actions {
-            flex-direction: row;
-            gap: var(--spacing-sm);
+          .chat-status {
+            display: none;
           }
 
-          .sidebar-btn {
-            flex: 1;
+          .header-actions .header-btn:last-child {
+            display: none;
+          }
+
+          .chat-messages {
+            padding: var(--spacing-md);
+            gap: var(--spacing-md);
+          }
+
+          .message {
+            max-width: 90%;
+          }
+
+          .message-avatar {
+            width: 32px;
+            height: 32px;
+          }
+
+          .message-bubble {
+            padding: var(--spacing-md);
+          }
+
+          .chat-input-section {
+            padding: var(--spacing-md);
+          }
+
+          .sidebar-panel {
+            width: 100%;
+            right: -100%;
+            animation: slideInRight 0.3s ease;
           }
 
           .input-meta {
@@ -954,64 +1165,192 @@ const Chatbot = ({ userPreferences, onPreferencesChange }) => {
             align-items: flex-start;
             gap: var(--spacing-xs);
           }
-
-          .message {
-            max-width: 95%;
-          }
-
-          .chat-messages {
-            padding: var(--spacing-md);
-          }
-
-          .chat-input-form {
-            padding: var(--spacing-md);
-          }
-
-          .message-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: var(--spacing-sm);
-          }
-
-          .copy-btn {
-            align-self: flex-end;
-          }
         }
 
         @media (max-width: 480px) {
-          .chatbot-page {
-            padding: var(--spacing-md) 0;
-          }
-
           .chat-header {
-            padding: var(--spacing-md);
-          }
-
-          .message-text {
-            padding: var(--spacing-md);
-          }
-
-          .content-section {
             padding: var(--spacing-sm);
           }
 
-          .chat-input {
-            font-size: 16px; /* Prevent zoom on iOS */
+          .header-left {
+            gap: var(--spacing-sm);
+          }
+
+          .chat-title {
+            gap: var(--spacing-sm);
+          }
+
+          .title-content h1 {
+            font-size: var(--font-size-sm);
+          }
+
+          .chat-messages {
+            padding: var(--spacing-sm);
+          }
+
+          .message-bubble {
+            padding: var(--spacing-sm);
+          }
+
+          .message-avatar {
+            width: 28px;
+            height: 28px;
           }
 
           .send-button {
-            min-width: 2.5rem;
-            height: 2.5rem;
+            min-width: 44px;
+            min-height: 44px;
           }
 
-          .message-meta {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: var(--spacing-xs);
+          .sidebar-content {
+            padding: var(--spacing-md);
+          }
+        }
+
+        /* Landscape Mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+          .chatbot-fullscreen {
+            height: 100vh;
           }
 
-          .sidebar-tips {
-            display: none; /* Hide on very small screens */
+          .chat-header {
+            min-height: 50px;
+            padding: var(--spacing-sm) var(--spacing-md);
+          }
+
+          .chat-messages {
+            padding: var(--spacing-sm) var(--spacing-md);
+          }
+
+          .chat-input-section {
+            padding: var(--spacing-sm) var(--spacing-md);
+          }
+        }
+
+        /* Desktop Enhancements */
+        @media (min-width: 1024px) {
+          .chat-messages {
+            padding: var(--spacing-2xl);
+            gap: var(--spacing-xl);
+          }
+
+          .message {
+            max-width: 70%;
+          }
+
+          .message-bubble {
+            padding: var(--spacing-xl);
+          }
+
+          .chat-input-section {
+            padding: var(--spacing-xl);
+          }
+
+          .sidebar-panel {
+            width: 400px;
+          }
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+          .message,
+          .sidebar-overlay,
+          .sidebar-panel {
+            animation: none;
+          }
+
+          .send-button:hover:not(:disabled) {
+            transform: none;
+          }
+
+          .action-btn:hover:not(:disabled) {
+            transform: none;
+          }
+        }
+
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+          .message-bubble {
+            border-width: 2px;
+          }
+
+          .confidence-badge {
+            border: 1px solid currentColor;
+          }
+
+          .input-wrapper {
+            border-width: 3px;
+          }
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+          background: var(--bg-secondary);
+          border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+          background: var(--border-primary);
+          border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+          background: var(--text-muted);
+        }
+
+        /* Print styles */
+        @media print {
+          .chat-header,
+          .sidebar-panel,
+          .sidebar-overlay,
+          .chat-input-section,
+          .copy-btn {
+            display: none !important;
+          }
+
+          .chatbot-fullscreen {
+            height: auto;
+          }
+
+          .chat-messages {
+            overflow: visible;
+            height: auto;
+          }
+
+          .message-bubble {
+            background: white;
+            color: black;
+            border: 1px solid black;
           }
         }
       `}</style>
